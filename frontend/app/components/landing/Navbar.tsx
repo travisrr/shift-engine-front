@@ -3,30 +3,52 @@ import Image from "next/image";
 
 export default function Navbar() {
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-4 py-5">
-      <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-shift-green sm:gap-3 sm:text-2xl">
-        <Image 
-          src="/shift-engine-logo-bw-nobg.webp" 
-          alt="Shift-Engine Logo" 
-          width={36} 
-          height={36} 
-          className="object-contain"
-        />
-        <span>Shift-Engine</span>
-      </Link>
-      <div className="ml-auto flex w-full items-center justify-end gap-2 sm:w-auto sm:gap-3">
-        <Link
-          href="/login"
-          className="inline-block rounded-md border border-shift-green/30 px-4 py-2 text-sm font-semibold text-shift-green transition-all hover:border-shift-green hover:bg-shift-green/5 sm:px-5 sm:py-2.5"
-        >
-          Log In
+    <nav className="w-full border-b border-shift-border bg-white/80 backdrop-blur-sm">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        {/* Logo - aligned to left edge of container */}
+        <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-shift-green sm:gap-3 sm:text-2xl">
+          <Image
+            src="/shift-engine-logo-bw-nobg.webp"
+            alt="Shift-Engine Logo"
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+          <span>Shift-Engine</span>
         </Link>
-        <Link
-          href="#pricing"
-          className="inline-block rounded-md bg-shift-brown px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-shift-brown-hover sm:px-6 sm:py-2.5"
-        >
-          Get Early Access
-        </Link>
+
+        {/* Center nav links - hidden on mobile */}
+        <div className="hidden items-center gap-8 md:flex">
+          <Link
+            href="#testimonials"
+            className="text-sm font-medium text-gray-600 transition-colors hover:text-shift-green"
+          >
+            Testimonials
+          </Link>
+          <Link
+            href="#articles"
+            className="text-sm font-medium text-gray-600 transition-colors hover:text-shift-green"
+          >
+            Articles
+          </Link>
+        </div>
+
+        {/* Right side buttons - aligned to right edge of container */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href="/login"
+            className="hidden rounded-md border border-shift-green/30 px-3 py-2 text-sm font-semibold text-shift-green transition-all hover:border-shift-green hover:bg-shift-green/5 sm:inline-block sm:px-4"
+          >
+            Log In
+          </Link>
+          <Link
+            href="#pricing"
+            className="inline-block rounded-md bg-shift-brown px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-shift-brown-hover sm:px-5"
+          >
+            <span className="sm:hidden">Get Access</span>
+            <span className="hidden sm:inline">Get Early Access</span>
+          </Link>
+        </div>
       </div>
     </nav>
   );

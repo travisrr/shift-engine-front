@@ -8,51 +8,47 @@ interface ServerMetric {
   id: string;
   name: string;
   position: { top: string; left: string };
+  calloutPosition: { top: string; left: string };
   metrics: {
     label: string;
     value: string;
     status: "good" | "bad" | "warning";
   }[];
-  lineAngle: number;
-  lineLength: number;
 }
 
 const serverMetrics: ServerMetric[] = [
   {
     id: "server-1",
     name: "Sarah M.",
-    position: { top: "8%", left: "8%" },
+    position: { top: "40%", left: "22%" },
+    calloutPosition: { top: "6%", left: "6%" },
     metrics: [
       { label: "Sales/hr", value: "$127", status: "good" },
       { label: "Tip %", value: "21.5%", status: "good" },
       { label: "Avg Check", value: "$68", status: "good" },
     ],
-    lineAngle: 45,
-    lineLength: 85,
   },
   {
     id: "server-2",
     name: "Jordan K.",
-    position: { top: "8%", left: "72%" },
+    position: { top: "48%", left: "52%" },
+    calloutPosition: { top: "6%", left: "72%" },
     metrics: [
       { label: "Sales/hr", value: "$89", status: "warning" },
       { label: "Tip %", value: "12.3%", status: "bad" },
       { label: "Avg Check", value: "$42", status: "bad" },
     ],
-    lineAngle: -45,
-    lineLength: 85,
   },
   {
     id: "server-3",
     name: "Alex R.",
-    position: { top: "75%", left: "30%" },
+    position: { top: "42%", left: "82%" },
+    calloutPosition: { top: "78%", left: "28%" },
     metrics: [
       { label: "Sales/hr", value: "$142", status: "good" },
       { label: "Tip %", value: "18.2%", status: "good" },
       { label: "Avg Check", value: "$54", status: "warning" },
     ],
-    lineAngle: -45,
-    lineLength: 90,
   },
 ];
 
@@ -87,43 +83,41 @@ function MetricBadge({
 }
 
 function ServerCallout({ server }: { server: ServerMetric }) {
-  // Calculate line endpoint based on angle and length
-  const rad = (server.lineAngle * Math.PI) / 180;
-  const lineEndX = Math.cos(rad) * server.lineLength;
-  const lineEndY = Math.sin(rad) * server.lineLength;
+  // Parse positions for calculations
+  const dotTop = parseFloat(server.position.top);
+  const dotLeft = parseFloat(server.position.left);
+  const boxTop = parseFloat(server.calloutPosition.top);
+  const boxLeft = parseFloat(server.calloutPosition.left);
 
-  // Determine callout position based on angle
-  const isRightSide = server.lineAngle > -90 && server.lineAngle < 90;
-  const calloutSide = isRightSide ? "left" : "right";
+  // Determine which side the callout is on relative to the dot
+  const isBoxToRight = boxLeft > dotLeft;
+  const isBoxBelow = boxTop > dotTop;
 
   return (
-    <div
-      className="absolute"
-      style={{
-        top: server.position.top,
-        left: server.position.left,
-      }}
-    >
+    <>
       {/* Pulsing dot at server location */}
-      <div className="relative -translate-x-1/2 -translate-y-1/2">
-        <div className="h-3 w-3 rounded-full bg-white shadow-lg" />
-        <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-white/60" />
-      </div>
-
-      {/* Dotted line to callout */}
-      <svg
-        className="pointer-events-none absolute left-0 top-0 overflow-visible"
+      <div
+        className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: Math.abs(lineEndX) + 40,
-          height: Math.abs(lineEndY) + 80,
-          transform: `translate(${calloutSide === "left" ? "10px" : "-10px"}, -10px)`,
+          top: server.position.top,
+          left: server.position.left,
         }}
       >
+        <div className="relative">
+          <div className="h-3 w-3 rounded-full bg-white shadow-lg" />
+          <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-white/60" />
+        </div>
+      </div>
+
+      {/* Dotted line connecting dot to callout */}
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+      >
         <line
-          x1={calloutSide === "left" ? 0 : Math.abs(lineEndX) + 20}
-          y1={10}
-          x2={calloutSide === "left" ? lineEndX + 20 : 20}
-          y2={lineEndY + 10}
+          x1={`${dotLeft}%`}
+          y1={`${dotTop}%`}
+          x2={`${boxLeft}%`}
+          y2={`${boxTop}%`}
           stroke="white"
           strokeWidth="1.5"
           strokeDasharray="4 4"
@@ -131,24 +125,26 @@ function ServerCallout({ server }: { server: ServerMetric }) {
         />
       </svg>
 
-      {/* Callout box - OPTIMIZED: removed backdrop-blur-sm */}
+      {/* Callout box at corner position */}
       <div
-        className={`absolute z-20 rounded-xl border border-white/30 bg-white p-3 shadow-[0_10px_40px_rgba(0,0,0,0.25)] ${calloutSide === "left" ? "ml-4" : "-ml-4 -translate-x-full"}`}
+        className="absolute z-20 -translate-x-1/2 -translate-y-1/2"
         style={{
-          transform: `translate(${lineEndX}px, ${lineEndY}px) ${calloutSide === "right" ? "translateX(-100%)" : ""}`,
-          minWidth: "140px",
+          top: server.calloutPosition.top,
+          left: server.calloutPosition.left,
         }}
       >
-        <p className="mb-2 text-xs font-semibold text-shift-text-dark">
-          {server.name}
-        </p>
-        <div className="flex flex-col gap-1">
-          {server.metrics.map((m) => (
-            <MetricBadge key={m.label} metric={m} />
-          ))}
+        <div className="rounded-xl border border-white/30 bg-white p-3 shadow-[0_10px_40px_rgba(0,0,0,0.25)] min-w-[140px]">
+          <p className="mb-2 text-xs font-semibold text-shift-text-dark">
+            {server.name}
+          </p>
+          <div className="flex flex-col gap-1">
+            {server.metrics.map((m) => (
+              <MetricBadge key={m.label} metric={m} />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
