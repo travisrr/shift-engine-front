@@ -56,16 +56,16 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
     <aside
       className={`
         fixed left-0 top-0 z-40 flex h-screen flex-col
-        border-r border-gray-200 bg-white
+        border-r border-slate-200 bg-white
         transition-all duration-200
         ${collapsed ? 'w-16' : 'w-60'}
       `}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-gray-200 px-5">
-        <Cog className="h-5 w-5 text-gray-900" strokeWidth={2} />
+      <div className="flex h-14 items-center gap-2.5 border-b border-slate-200 px-5">
+        <Cog className="h-5 w-5 text-slate-900" strokeWidth={2} />
         {!collapsed && (
-          <span className="text-[15px] font-semibold tracking-tight text-gray-900">
+          <span className="text-[15px] font-semibold tracking-tight text-slate-900">
             Shift-Engine
           </span>
         )}
@@ -83,14 +83,14 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 text-[13px] font-medium transition-colors
                 ${
                   item.active
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    ? 'bg-slate-100 text-slate-900'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 }
               `}
             >
               <Icon
                 className={`h-4 w-4 shrink-0 ${
-                  item.active ? 'text-gray-900' : 'text-gray-400 group-hover:text-gray-600'
+                  item.active ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'
                 }`}
                 strokeWidth={item.active ? 2 : 1.75}
               />
@@ -115,7 +115,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
               ${
                 dragActive
                   ? 'border-indigo-400 bg-indigo-50/60'
-                  : 'border-gray-300 bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/60'
+                  : 'border-slate-300 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-100/60'
               }
             `}
             role="button"
@@ -138,21 +138,21 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 className={`
                   flex h-8 w-8 shrink-0 items-center justify-center rounded-md
                   transition-colors duration-150
-                  ${dragActive ? 'bg-indigo-100' : 'bg-gray-100 group-hover:bg-gray-200/70'}
+                  ${dragActive ? 'bg-indigo-100' : 'bg-slate-100 group-hover:bg-slate-200/70'}
                 `}
               >
                 <Upload
                   className={`h-3.5 w-3.5 transition-colors duration-150 ${
-                    dragActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
+                    dragActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-500'
                   }`}
                   strokeWidth={2}
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium text-gray-600">
+                <p className="text-[12px] font-medium text-slate-600">
                   Drop CSV
                 </p>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-[10px] text-slate-400">
                   or click to browse
                 </p>
               </div>
@@ -165,28 +165,28 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       <div className="flex-1" />
 
       {/* User profile section */}
-      <div className="border-t border-gray-200 px-3 py-3">
-        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors hover:bg-gray-50">
+      <div className="border-t border-slate-200 px-3 py-3">
+        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors hover:bg-slate-50">
           {/* Avatar */}
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold text-white">
             M
           </div>
           {!collapsed && (
             <div className="flex flex-1 items-center justify-between">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-gray-900">
+                <p className="truncate text-[13px] font-medium text-slate-900">
                   Manager
                 </p>
-                <p className="truncate text-[11px] text-gray-400">
+                <p className="truncate text-[11px] text-slate-400">
                   admin@shiftengine.io
                 </p>
               </div>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             </div>
           )}
         </button>
-        <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700">
-          <Settings className="h-4 w-4 text-gray-400" strokeWidth={1.75} />
+        <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700">
+          <Settings className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
           {!collapsed && 'Settings'}
         </button>
       </div>

@@ -60,28 +60,28 @@ export default function Dashboard({
       : null;
 
   return (
-    <div className="ml-60 min-h-screen bg-gray-50/60">
+    <div className="ml-60 min-h-screen bg-slate-50/50">
       <div className="mx-auto max-w-[1120px] px-8 py-8">
         {/* ── Header with Date Picker ── */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-gray-900">
+            <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
               Performance Dashboard
             </h1>
-            <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
+            <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
               Upload Toast data to generate server scorecards and surface
               actionable insights.
             </p>
           </div>
 
           {/* Date Picker */}
-          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
-            <CalendarDays className="h-4 w-4 text-gray-400" strokeWidth={1.75} />
+          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <CalendarDays className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="border-none bg-transparent text-[13px] font-medium text-gray-700 outline-none"
+              className="border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none"
               id="date-picker"
             />
           </div>
@@ -89,14 +89,14 @@ export default function Dashboard({
 
         {/* ── Empty State ── */}
         {!hasData && (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-16">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-              <CalendarDays className="h-5 w-5 text-gray-400" strokeWidth={1.75} />
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 py-16">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100">
+              <CalendarDays className="h-5 w-5 text-slate-400" strokeWidth={1.75} />
             </div>
-            <p className="text-[14px] font-medium text-gray-700">
+            <p className="text-[14px] font-medium text-slate-700">
               No data for this date
             </p>
-            <p className="mt-1 text-[12px] text-gray-400">
+            <p className="mt-1 text-[12px] text-slate-400">
               Upload a Toast Server Summary CSV using the sidebar to get started.
             </p>
           </div>
@@ -107,14 +107,14 @@ export default function Dashboard({
             {/* ── Top-Level Stats ── */}
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {/* Top Performer */}
-              <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <div className="rounded-lg border border-slate-200 bg-white px-5 py-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
                     Top Performer
                   </span>
                   <Trophy className="h-4 w-4 text-amber-400" strokeWidth={1.75} />
                 </div>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-slate-900">
                   {topPerformer?.name ?? '—'}
                 </p>
                 <div className="mt-1 flex items-center gap-1 text-[12px] text-emerald-600">
@@ -124,14 +124,14 @@ export default function Dashboard({
               </div>
 
               {/* Highest Avg Check */}
-              <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <div className="rounded-lg border border-slate-200 bg-white px-5 py-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
                     Highest Avg Check
                   </span>
                   <DollarSign className="h-4 w-4 text-emerald-400" strokeWidth={1.75} />
                 </div>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-slate-900">
                   ${highestAvgCheck?.avgCheck.toFixed(2) ?? '—'}
                 </p>
                 <div className="mt-1 flex items-center gap-1 text-[12px] text-emerald-600">
@@ -141,15 +141,15 @@ export default function Dashboard({
               </div>
 
               {/* Total Servers */}
-              <div className="rounded-lg border border-gray-200 bg-white px-5 py-4">
+              <div className="rounded-lg border border-slate-200 bg-white px-5 py-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
                     Servers Analyzed
                   </span>
                   <Users className="h-4 w-4 text-blue-400" strokeWidth={1.75} />
                 </div>
-                <p className="text-lg font-semibold text-gray-900">{servers.length}</p>
-                <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
+                <p className="text-lg font-semibold text-slate-900">{servers.length}</p>
+                <div className="mt-1 flex items-center gap-1 text-[12px] text-slate-400">
                   <ArrowDownRight className="h-3 w-3" />
                   <span>Current upload</span>
                 </div>
@@ -157,12 +157,12 @@ export default function Dashboard({
             </div>
 
             {/* ── Scorecard Table ── */}
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-              <div className="border-b border-gray-200 px-5 py-3.5">
-                <h2 className="text-[14px] font-semibold text-gray-900">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 px-5 py-3.5">
+                <h2 className="text-[14px] font-semibold text-slate-900">
                   Server Scorecard
                 </h2>
-                <p className="mt-0.5 text-[12px] text-gray-400">
+                <p className="mt-0.5 text-[12px] text-slate-400">
                   Ranked by composite performance score
                 </p>
               </div>
@@ -170,43 +170,43 @@ export default function Dashboard({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    <tr className="border-b border-slate-100">
+                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Server
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Final Score
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Sales/hr
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Tips/hr
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Tip %
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Avg Check
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Guests/hr
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-100">
                     {servers.map((server, idx) => (
                       <tr
                         key={server.name}
-                        className="transition-colors hover:bg-gray-50/80"
+                        className="transition-colors hover:bg-slate-50/80"
                       >
                         {/* Server name */}
                         <td className="whitespace-nowrap px-5 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-500">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
                               {idx + 1}
                             </div>
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-slate-900">
                               {server.name}
                             </span>
                           </div>
@@ -222,19 +222,19 @@ export default function Dashboard({
                         </td>
 
                         {/* Numeric columns */}
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
                           ${server.salesHr.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
                           ${server.tipsHr.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
                           {server.tipPct.toFixed(1)}%
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
                           ${server.avgCheck.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
                           {server.guestsHr.toFixed(1)}
                         </td>
                       </tr>
