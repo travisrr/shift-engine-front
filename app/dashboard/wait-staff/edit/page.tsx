@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, AlertTriangle, Download } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
 
 // Lazy Supabase client to avoid build-time errors
@@ -55,6 +55,12 @@ export default function EditTeamPage() {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [availableServers, setAvailableServers] = useState<string[]>([]);
+  const [selectedServers, setSelectedServers] = useState<Set<string>>(new Set());
+  const [isLoadingServers, setIsLoadingServers] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   // Fetch staff data on mount
   useEffect(() => {
@@ -245,6 +251,127 @@ export default function EditTeamPage() {
     });
   }
 
+  async function openImportModal() {
+    setIsImportModalOpen(true);
+    setIsLoadingServers(true);
+    setImportError(null);
+    setImportSuccess(null);
+    setSelectedServers(new Set());
+
+    try {
+      const client = await getSupabase();
+      if (!client) {
+        setImportError('Database not available');
+        return;
+      }
+
+      // Get the most recent upload
+      const { data: latestUpload, error: uploadError } = await client
+        .from('uploads')
+        .select('id, date')
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (uploadError) throw uploadError;
+
+      if (!latestUpload) {
+        setAvailableServers([]);
+        return;
+      }
+
+      // Get server names from the latest upload
+      const { data: scores, error: scoresError } = await client
+        .from('server_scores')
+        .select('server_name')
+        .eq('upload_id', latestUpload.id);
+
+      if (scoresError) throw scoresError;
+
+      // Filter out servers that are already in wait_staff
+      const serverNames = scores?.map((s) => s.server_name) || [];
+      const { data: existingStaff } = await client
+        .from('wait_staff')
+        .select('full_name');
+
+      const existingNames = new Set(existingStaff?.map((s) => s.full_name) || []);
+      const newServers = serverNames.filter((name) => !existingNames.has(name));
+
+      setAvailableServers(newServers);
+    } catch (err) {
+      console.error('Error fetching available servers:', err);
+      setImportError('Failed to load available servers');
+    } finally {
+      setIsLoadingServers(false);
+    }
+  }
+
+  function closeImportModal() {
+    setIsImportModalOpen(false);
+    setAvailableServers([]);
+    setSelectedServers(new Set());
+    setImportError(null);
+    setImportSuccess(null);
+  }
+
+  function toggleServerSelection(serverName: string) {
+    setSelectedServers((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(serverName)) {
+        newSet.delete(serverName);
+      } else {
+        newSet.add(serverName);
+      }
+      return newSet;
+    });
+  }
+
+  function toggleAllServers() {
+    if (selectedServers.size === availableServers.length) {
+      setSelectedServers(new Set());
+    } else {
+      setSelectedServers(new Set(availableServers));
+    }
+  }
+
+  async function handleImportServers() {
+    if (selectedServers.size === 0) return;
+
+    setIsSubmitting(true);
+    setImportError(null);
+    setImportSuccess(null);
+
+    try {
+      const client = await getSupabase();
+      if (!client) throw new Error('Database not available');
+
+      const today = new Date().toISOString().split('T')[0];
+      const newStaff = Array.from(selectedServers).map((name) => ({
+        full_name: name,
+        hourly_rate: 2.13,
+        hire_date: today,
+        status: 'Active' as const,
+      }));
+
+      const { error } = await client.from('wait_staff').insert(newStaff);
+
+      if (error) throw error;
+
+      setImportSuccess(`Successfully imported ${selectedServers.size} staff member${selectedServers.size === 1 ? '' : 's'}`);
+      await fetchStaff();
+
+      // Clear selection but keep modal open briefly to show success
+      setTimeout(() => {
+        closeImportModal();
+      }, 1500);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import staff members';
+      setImportError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
       <Sidebar />
@@ -262,7 +389,14 @@ export default function EditTeamPage() {
           </div>
 
           {/* ── Action Bar ── */}
-          <div className="mb-6 flex justify-end">
+          <div className="mb-6 flex justify-end gap-3">
+            <button
+              onClick={openImportModal}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-700 transition-colors hover:bg-zinc-50"
+            >
+              <Download className="h-4 w-4" strokeWidth={2} />
+              Import from Dashboard
+            </button>
             <button
               onClick={openAddModal}
               className="inline-flex items-center gap-2 rounded-md bg-black px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-gray-800"
@@ -567,6 +701,130 @@ export default function EditTeamPage() {
                     </span>
                   ) : (
                     'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Import Servers Modal ── */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-[1px]"
+            onClick={closeImportModal}
+          />
+
+          {/* Modal */}
+          <div className="relative z-10 w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <h2 className="text-[15px] font-semibold text-black">
+                Import from Dashboard
+              </h2>
+              <button
+                onClick={closeImportModal}
+                className="rounded p-1 text-gray-400 transition-colors hover:bg-zinc-100 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {importError && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
+                  {importError}
+                </div>
+              )}
+
+              {importSuccess && (
+                <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-700">
+                  {importSuccess}
+                </div>
+              )}
+
+              {isLoadingServers ? (
+                <div className="flex items-center justify-center gap-2 py-8">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
+                  <span className="text-[13px] text-gray-500">Loading available servers...</span>
+                </div>
+              ) : availableServers.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-[14px] font-medium text-gray-700">
+                    No new servers to import
+                  </p>
+                  <p className="mt-1 text-[12px] text-gray-400">
+                    All servers from your dashboard are already in the staff list, or no dashboard data is available.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-4 text-[13px] text-gray-600">
+                    Select servers from your latest dashboard upload to add to the staff list:
+                  </p>
+
+                  <div className="mb-3 flex items-center gap-2 border-b border-gray-100 pb-3">
+                    <input
+                      type="checkbox"
+                      id="select-all"
+                      checked={selectedServers.size === availableServers.length && availableServers.length > 0}
+                      onChange={toggleAllServers}
+                      className="h-4 w-4 rounded border-gray-300 text-black focus:ring-0"
+                    />
+                    <label
+                      htmlFor="select-all"
+                      className="text-[13px] font-medium text-gray-700 cursor-pointer"
+                    >
+                      Select All ({availableServers.length})
+                    </label>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {availableServers.map((serverName) => (
+                      <div
+                        key={serverName}
+                        className="flex items-center gap-2 rounded-md border border-gray-100 px-3 py-2 hover:bg-zinc-50"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`server-${serverName}`}
+                          checked={selectedServers.has(serverName)}
+                          onChange={() => toggleServerSelection(serverName)}
+                          className="h-4 w-4 rounded border-gray-300 text-black focus:ring-0"
+                        />
+                        <label
+                          htmlFor={`server-${serverName}`}
+                          className="flex-1 text-[13px] text-gray-800 cursor-pointer"
+                        >
+                          {serverName}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  onClick={closeImportModal}
+                  className="rounded-md border border-gray-200 px-4 py-2 text-[13px] font-medium text-gray-700 transition-colors hover:bg-zinc-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportServers}
+                  disabled={isSubmitting || selectedServers.size === 0}
+                  className="rounded-md bg-black px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                      Importing...
+                    </span>
+                  ) : (
+                    `Import ${selectedServers.size > 0 ? `(${selectedServers.size})` : ''}`
                   )}
                 </button>
               </div>
