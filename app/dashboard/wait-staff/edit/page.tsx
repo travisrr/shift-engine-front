@@ -264,12 +264,22 @@ export default function EditTeamPage() {
 
   // Mock server names from dashboard (fallback when no CSV uploaded yet)
   const mockServerNames = [
-    'Jessica M.',
-    'Carlos R.',
-    'Aisha T.',
-    'Derek L.',
-    'Maria S.',
-    'Tom K.',
+    'Addie Stubbe',
+    'Alec Ramsey',
+    'Caleigh Graves',
+    'Chloe Colaianni',
+    'Dean Polizos',
+    'Eric Fowler',
+    'Giselle San Filippo',
+    'Karen Mason',
+    'Lauren Claxton',
+    'Madison Lawrence',
+    'Meredith Johnson',
+    'Morgan Sparkman',
+    'Paige Anderson',
+    'Rachel Brunet',
+    'Thomas Malone',
+    'Ty Buckley',
   ];
 
   async function openImportModal() {

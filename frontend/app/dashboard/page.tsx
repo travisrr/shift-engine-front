@@ -15,12 +15,22 @@ function todayISO() {
 /* ─────────────────── Mock Data (shown when no CSV uploaded) ─────────────────── */
 
 const mockServers: ServerData[] = [
-  { name: 'Jessica M.', score: 94, salesHr: 312.5, tipsHr: 48.75, tipPct: 22.1, avgCheck: 68.4, guestsHr: 8.2 },
-  { name: 'Carlos R.', score: 88, salesHr: 285.0, tipsHr: 42.3, tipPct: 20.6, avgCheck: 54.2, guestsHr: 9.1 },
-  { name: 'Aisha T.', score: 82, salesHr: 260.0, tipsHr: 39.1, tipPct: 19.8, avgCheck: 49.5, guestsHr: 7.6 },
-  { name: 'Derek L.', score: 76, salesHr: 230.0, tipsHr: 33.5, tipPct: 18.2, avgCheck: 44.8, guestsHr: 7.0 },
-  { name: 'Maria S.', score: 71, salesHr: 205.0, tipsHr: 28.9, tipPct: 17.5, avgCheck: 41.0, guestsHr: 6.4 },
-  { name: 'Tom K.', score: 63, salesHr: 178.0, tipsHr: 24.1, tipPct: 15.9, avgCheck: 38.2, guestsHr: 5.8 },
+  { name: 'Addie Stubbe', score: 78, salesHr: 151.7, tipsHr: 29.1, tipPct: 19.2, avgCheck: 53.4, guestsHr: 5.4 },
+  { name: 'Alec Ramsey', score: 76, salesHr: 116.9, tipsHr: 21.9, tipPct: 18.8, avgCheck: 68.2, guestsHr: 3.0 },
+  { name: 'Caleigh Graves', score: 92, salesHr: 776.2, tipsHr: 163.2, tipPct: 21.0, avgCheck: 45.6, guestsHr: 26.5 },
+  { name: 'Chloe Colaianni', score: 95, salesHr: 201.0, tipsHr: 36.3, tipPct: 18.1, avgCheck: 63.0, guestsHr: 5.7 },
+  { name: 'Dean Polizos', score: 89, salesHr: 178.7, tipsHr: 30.9, tipPct: 17.3, avgCheck: 68.7, guestsHr: 4.9 },
+  { name: 'Eric Fowler', score: 89, salesHr: 166.5, tipsHr: 30.9, tipPct: 18.5, avgCheck: 64.9, guestsHr: 4.7 },
+  { name: 'Giselle San Filippo', score: 86, salesHr: 199.4, tipsHr: 27.5, tipPct: 13.8, avgCheck: 64.5, guestsHr: 5.7 },
+  { name: 'Karen Mason', score: 90, salesHr: 152.0, tipsHr: 28.3, tipPct: 18.6, avgCheck: 66.0, guestsHr: 4.5 },
+  { name: 'Lauren Claxton', score: 80, salesHr: 151.7, tipsHr: 33.1, tipPct: 21.8, avgCheck: 71.3, guestsHr: 4.1 },
+  { name: 'Madison Lawrence', score: 88, salesHr: 182.7, tipsHr: 32.3, tipPct: 17.7, avgCheck: 65.3, guestsHr: 5.6 },
+  { name: 'Meredith Johnson', score: 87, salesHr: 163.5, tipsHr: 31.7, tipPct: 19.4, avgCheck: 51.2, guestsHr: 5.6 },
+  { name: 'Morgan Sparkman', score: 86, salesHr: 168.1, tipsHr: 30.9, tipPct: 18.4, avgCheck: 49.1, guestsHr: 5.4 },
+  { name: 'Paige Anderson', score: 81, salesHr: 145.5, tipsHr: 29.1, tipPct: 20.0, avgCheck: 55.2, guestsHr: 4.8 },
+  { name: 'Rachel Brunet', score: 91, salesHr: 163.8, tipsHr: 31.5, tipPct: 19.2, avgCheck: 54.1, guestsHr: 5.4 },
+  { name: 'Thomas Malone', score: 79, salesHr: 181.0, tipsHr: 35.3, tipPct: 19.5, avgCheck: 65.2, guestsHr: 5.2 },
+  { name: 'Ty Buckley', score: 89, salesHr: 160.1, tipsHr: 28.7, tipPct: 17.9, avgCheck: 69.9, guestsHr: 4.2 },
 ];
 
 /* ─────────────────── CSV Parsing Helpers ─────────────────── */
@@ -42,6 +52,7 @@ interface ToastCSVRow {
   'Guests'?: string | number;
   'Total Guests'?: string | number;
   'Guest Count'?: string | number;
+  'Guests Served'?: string | number;
   'Checks'?: string | number;
   'Total Checks'?: string | number;
   'Check Count'?: string | number;
@@ -91,9 +102,10 @@ function parseToastCSV(csvText: string): ServerScore[] {
     const netSales = normalizeNumber(getColumnValue(row, ['Net Sales', 'Sales', 'Total Sales']));
     const tips = normalizeNumber(getColumnValue(row, ['Tips', 'Total Tips', 'Tip Amount']));
     const hours = normalizeNumber(getColumnValue(row, ['Hours', 'Shift Hours', 'Worked Hours']));
-    const guests = normalizeNumber(getColumnValue(row, ['Guests', 'Total Guests', 'Guest Count']));
+    const guests = normalizeNumber(getColumnValue(row, ['Guests', 'Total Guests', 'Guest Count', 'Guests Served']));
     const checks = normalizeNumber(getColumnValue(row, ['Checks', 'Total Checks', 'Check Count']));
     const tipPct = normalizeNumber(getColumnValue(row, ['Tip Percentage', 'Tip %', 'Tip Percent']));
+    const avgCheckDirect = normalizeNumber(getColumnValue(row, ['Avg Check', 'Average Check']));
 
     // Skip rows with no meaningful data
     if (!netSales && !tips && !hours) continue;
@@ -101,7 +113,8 @@ function parseToastCSV(csvText: string): ServerScore[] {
     // Calculate derived metrics
     const salesHr = hours && hours > 0 && netSales ? netSales / hours : null;
     const tipsHr = hours && hours > 0 && tips ? tips / hours : null;
-    const avgCheck = checks && checks > 0 && netSales ? netSales / checks : null;
+    // Use direct avg check from CSV if available, otherwise calculate from sales/checks
+    const avgCheck = avgCheckDirect ?? (checks && checks > 0 && netSales ? netSales / checks : null);
     const guestsHr = hours && hours > 0 && guests ? guests / hours : null;
 
     // Calculate composite score (0-100 scale based on multiple factors)
