@@ -12,6 +12,17 @@ function todayISO() {
   return new Date().toISOString().split('T')[0];
 }
 
+/* ─────────────────── Mock Data (shown when no CSV uploaded) ─────────────────── */
+
+const mockServers: ServerData[] = [
+  { name: 'Jessica M.', score: 94, salesHr: 312.5, tipsHr: 48.75, tipPct: 22.1, avgCheck: 68.4, guestsHr: 8.2 },
+  { name: 'Carlos R.', score: 88, salesHr: 285.0, tipsHr: 42.3, tipPct: 20.6, avgCheck: 54.2, guestsHr: 9.1 },
+  { name: 'Aisha T.', score: 82, salesHr: 260.0, tipsHr: 39.1, tipPct: 19.8, avgCheck: 49.5, guestsHr: 7.6 },
+  { name: 'Derek L.', score: 76, salesHr: 230.0, tipsHr: 33.5, tipPct: 18.2, avgCheck: 44.8, guestsHr: 7.0 },
+  { name: 'Maria S.', score: 71, salesHr: 205.0, tipsHr: 28.9, tipPct: 17.5, avgCheck: 41.0, guestsHr: 6.4 },
+  { name: 'Tom K.', score: 63, salesHr: 178.0, tipsHr: 24.1, tipPct: 15.9, avgCheck: 38.2, guestsHr: 5.8 },
+];
+
 /* ─────────────────── CSV Parsing Helpers ─────────────────── */
 
 interface ToastCSVRow {
@@ -150,7 +161,7 @@ export default function DashboardPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // Load data from Supabase when date changes
+  // Load data from Supabase when date changes (fallback to mock data)
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
@@ -159,14 +170,16 @@ export default function DashboardPage() {
 
       try {
         const result = await getUploadByDate(selectedDate);
-        if (result && result.scores) {
+        if (result && result.scores && result.scores.length > 0) {
           setServers(serverScoreToServerData(result.scores));
         } else {
-          setServers([]);
+          // Fallback to mock data when no CSV has been uploaded
+          setServers(mockServers);
         }
       } catch (err) {
         console.error('Error loading data:', err);
-        setServers([]);
+        // Fallback to mock data on error
+        setServers(mockServers);
       } finally {
         setIsLoading(false);
       }
