@@ -24,23 +24,86 @@ export default function RootLayout({
       <body className="min-h-full font-sans">
         <div className="flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>
-          <footer className="bg-shift-green px-6 py-8 text-shift-offwhite">
-            <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
-              <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                <Link className="transition hover:opacity-80" href="/work-with-us">
-                  Work with us
-                </Link>
-                <Link className="transition hover:opacity-80" href="/privacy-policy">
-                  Privacy Policy
-                </Link>
-                <Link
-                  className="transition hover:opacity-80"
-                  href="/terms-and-conditions"
-                >
-                  Terms and Conditions
-                </Link>
-              </nav>
-              <p>Made in Nashville with 🖤</p>
+          <footer className="bg-shift-green px-6 py-12 text-shift-offwhite">
+            <div className="mx-auto w-full max-w-6xl">
+              {/* Main Footer Content */}
+              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Brand Column */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Shift Engine</h3>
+                  <p className="text-sm text-white/70">
+                    Restaurant performance software that turns Toast POS data into actionable coaching insights.
+                  </p>
+                  <p className="text-xs text-white/50">Made in Nashville with 🖤</p>
+                </div>
+
+                {/* Legal Links */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wide text-white/80">Legal</h4>
+                  <nav className="flex flex-col gap-2">
+                    <Link className="text-sm transition hover:text-white/80" href="/privacy-policy">
+                      Privacy Policy
+                    </Link>
+                    <Link className="text-sm transition hover:text-white/80" href="/terms-and-conditions">
+                      Terms & Conditions
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Contact */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wide text-white/80">Contact</h4>
+                  <nav className="flex flex-col gap-2">
+                    <a
+                      href="mailto:hello@shiftengine.co"
+                      className="text-sm transition hover:text-white/80"
+                    >
+                      hello@shiftengine.co
+                    </a>
+                    <Link className="text-sm transition hover:text-white/80" href="/work-with-us">
+                      Work with us
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Social/Connect */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wide text-white/80">Connect</h4>
+                  <nav className="flex flex-col gap-2">
+                    <a
+                      href="https://twitter.com/shiftengine"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm transition hover:text-white/80"
+                    >
+                      Twitter / X
+                    </a>
+                    <a
+                      href="https://linkedin.com/company/shiftengine"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm transition hover:text-white/80"
+                    >
+                      LinkedIn
+                    </a>
+                  </nav>
+                </div>
+              </div>
+
+              {/* Bottom Bar */}
+              <div className="mt-10 border-t border-white/10 pt-6">
+                <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+                  <p className="text-xs text-white/50">
+                    © {new Date().getFullYear()} Shift Engine. All rights reserved.
+                  </p>
+                  <p className="text-xs text-white/50">
+                    Questions? Email us at{" "}
+                    <a href="mailto:support@shiftengine.co" className="underline transition hover:text-white/80">
+                      support@shiftengine.co
+                    </a>
+                  </p>
+                </div>
+              </div>
             </div>
           </footer>
         </div>
