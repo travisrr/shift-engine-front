@@ -3,6 +3,7 @@ import Link from "next/link";
 import PhotoRealHero from "./components/landing/PhotoRealHero";
 import PhotoSection, { PhotoAccent } from "./components/landing/PhotoSection";
 import WhispyBackground from "./components/landing/WhispyBackground";
+import Pricing from "./components/landing/Pricing";
 
 type PainPoint = {
   pain: string;
@@ -336,6 +337,9 @@ export default function LandingPage() {
           </div>
         </div>
       </PhotoSection>
+
+      {/* Pricing Section */}
+      <Pricing />
 
       {/* Final CTA */}
       <section className="relative pb-20 pt-8">
