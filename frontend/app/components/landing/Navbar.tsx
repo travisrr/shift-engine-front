@@ -36,10 +36,10 @@ export default function Navbar() {
         {/* Right side buttons - aligned to right edge of container */}
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="/login"
+            href="/dashboard"
             className="hidden rounded-md border border-shift-green/30 px-3 py-2 text-sm font-semibold text-shift-green transition-all hover:border-shift-green hover:bg-shift-green/5 sm:inline-block sm:px-4"
           >
-            Log In
+            Dashboard
           </Link>
           <Link
             href="#pricing"
