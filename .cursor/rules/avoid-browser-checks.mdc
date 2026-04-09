@@ -1,0 +1,10 @@
+---
+description: Prefer non-browser verification when possible
+alwaysApply: true
+---
+
+# Avoid Browser Checks By Default
+
+- Do not run browser automation or browser-based checks unless truly necessary.
+- Prefer faster local validation first: static analysis, linting, tests, build checks, and targeted code inspection.
+- Use browser checks only when the task specifically requires UI/runtime behavior that cannot be validated another way.
