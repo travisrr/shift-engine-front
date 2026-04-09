@@ -3,6 +3,7 @@ import Link from "next/link";
 import PhotoRealHero from "./components/landing/PhotoRealHero";
 import PhotoSection, { PhotoAccent } from "./components/landing/PhotoSection";
 import WhispyBackground from "./components/landing/WhispyBackground";
+import PointillismBackground from "./components/landing/PointillismBackground";
 import Pricing from "./components/landing/Pricing";
 
 type PainPoint = {
@@ -154,9 +155,14 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero with NYC Restaurant + Server Callouts */}
-      <div className="relative">
-        <WhispyBackground intensity="high" className="opacity-60" />
+      {/* Hero with Digital Pointillism background - tech sophistication */}
+      <div className="relative overflow-hidden">
+        <PointillismBackground
+          particleCount={320}
+          connectionDistance={130}
+          maxConnections={3}
+          className="opacity-70"
+        />
         <PhotoRealHero />
       </div>
 
@@ -341,10 +347,17 @@ export default function LandingPage() {
       {/* Pricing Section */}
       <Pricing />
 
-      {/* Final CTA */}
-      <section className="relative pb-20 pt-8">
-        <WhispyBackground intensity="low" className="opacity-30" />
-        <div className="relative mx-auto max-w-6xl rounded-3xl border border-shift-border bg-white px-6 py-10 text-center shadow-[0_16px_50px_rgba(0,0,0,0.06)] sm:px-12">
+      {/* Final CTA with Digital Pointillism - sophisticated closing */}
+      <section className="relative overflow-hidden pb-20 pt-8">
+        <div className="absolute inset-0">
+          <PointillismBackground
+            particleCount={180}
+            connectionDistance={90}
+            maxConnections={2}
+            className="opacity-50"
+          />
+        </div>
+        <div className="relative mx-auto max-w-6xl rounded-3xl border border-shift-border bg-white/95 px-6 py-10 text-center shadow-[0_16px_50px_rgba(0,0,0,0.06)] backdrop-blur-sm sm:px-12">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Shift Engine brings objective clarity to every shift.
           </h2>
