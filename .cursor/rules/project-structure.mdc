@@ -1,0 +1,27 @@
+# Project Structure: NOT a Monorepo
+
+This is a single Next.js application, NOT a monorepo. The `frontend/` subdirectory exists for legacy/migration reasons, but the app runs from root.
+
+## Critical Paths
+
+### Source of Truth
+- **Pages**: Edit files in `frontend/app/` (root `app/page.tsx` just re-exports from `../frontend/app/page`)
+- **Components**: Located in `frontend/app/components/`
+- **Static assets**: Must be in **root** `public/` - NOT `frontend/public/`
+- **Config files**: Use root `next.config.ts`, `package.json`, `tailwind.config.ts`
+
+### Commands
+Always run from root directory:
+```bash
+npm run dev    # NOT cd frontend && npm run dev
+npm run build  # NOT cd frontend && npm run build
+```
+
+### Common Mistakes to Avoid
+1. **DON'T add images to `frontend/public/`** - they won't be served. Use root `public/`.
+2. **DON'T treat this as a monorepo** - no `pnpm-workspace.yaml`, no workspace config, no package linking.
+3. **DON'T edit root `app/page.tsx`** - it just re-exports; edit `frontend/app/page.tsx` instead.
+4. **Root `package.json` is named "frontend"** - this is historical; ignore the name, run from root.
+
+## Backend
+There's also a `backend/` folder (likely for Supabase edge functions or similar). Keep it separate from the Next.js app - don't import across boundaries.
