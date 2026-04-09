@@ -7,6 +7,29 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  /* ── Shift-Engine Brand Palette ── */
+  --color-shift-green: #3A4F39;
+  --color-shift-green-accent: #5C7A53;
+  --color-shift-brown: #8C6239;
+  --color-shift-brown-hover: #704b2b;
+  --color-shift-offwhite: #FAF8F5;
+  --color-shift-text-dark: #2C2C2C;
+  --color-shift-text-light: #666666;
+  --color-shift-border: #EAEAEA;
+  --color-kpi-good: #2E7D32;
+  --color-kpi-bad: #C62828;
+
+  /* ── Custom animation ── */
+  --animate-float: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -36,15 +59,57 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #94a3b8;
 }
 
-/* Drag-and-drop highlight */
+/* ── Drag-and-drop highlight (dashboard) ── */
 .dropzone-active {
   border-color: #6366f1 !important;
   background-color: #eef2ff !important;
 }
+
+/* ═══════════════════════════════════════════
+   Landing Page – KPI Badge Pseudo-Elements
+   (Complex ::before/::after positioning that
+    doesn't map cleanly to utility classes)
+   ═══════════════════════════════════════════ */
+
+/* Shared: connecting line from badge to dot */
+.kpi-badge::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 2px;
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+}
+
+/* Shared: glowing dot at end of line */
+.kpi-badge::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+/* Badge 1 – top-left, green dot */
+.kpi-badge-1::before { height: 140px; }
+.kpi-badge-1::after  { top: calc(100% + 140px); background-color: #2E7D32; }
+
+/* Badge 2 – top-right, red dot */
+.kpi-badge-2::before { height: 90px; }
+.kpi-badge-2::after  { top: calc(100% + 90px); background-color: #C62828; }
+
+/* Badge 3 – center-bottom, green dot */
+.kpi-badge-3::before { height: 60px; }
+.kpi-badge-3::after  { top: calc(100% + 60px); background-color: #2E7D32; }
