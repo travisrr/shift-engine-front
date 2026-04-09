@@ -1,11 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Navbar() {
   return (
     <nav className="flex items-center justify-between py-5">
-      <div className="text-2xl font-extrabold tracking-tight text-shift-green">
-        ⚙️ Shift-Engine
-      </div>
+      <Link href="/" className="flex items-center gap-3 text-2xl font-extrabold tracking-tight text-shift-green">
+        <Image 
+          src="/shift-engine-logo-bw-nobg.png" 
+          alt="Shift-Engine Logo" 
+          width={36} 
+          height={36} 
+          className="object-contain"
+        />
+        <span>Shift-Engine</span>
+      </Link>
       <div className="flex items-center gap-3">
         <Link
           href="/login"
