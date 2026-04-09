@@ -30,6 +30,32 @@
   100% { transform: translateY(0px); }
 }
 
+/* ═══════════════════════════════════════════
+   PhotoRealHero – Server Callout Animations
+   ═══════════════════════════════════════════ */
+
+/* Pulsing dot animation for server markers */
+@keyframes pulse-ring {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+}
+
+/* Subtle float for callout boxes */
+@keyframes callout-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Dotted line dash animation */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -8; }
+}
+
+/* Apply dash animation to SVG lines in hero */
+.photo-hero-line {
+  animation: dash-flow 1s linear infinite;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
