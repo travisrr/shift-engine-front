@@ -21,38 +21,38 @@ const serverMetrics: ServerMetric[] = [
   {
     id: "server-1",
     name: "Sarah M.",
-    position: { top: "35%", left: "22%" },
+    position: { top: "38%", left: "24%" },
     metrics: [
       { label: "Sales/hr", value: "$127", status: "good" },
       { label: "Tip %", value: "21.5%", status: "good" },
       { label: "Avg Check", value: "$68", status: "good" },
     ],
-    lineAngle: -45,
-    lineLength: 120,
+    lineAngle: -130,
+    lineLength: 110,
   },
   {
     id: "server-2",
     name: "Jordan K.",
-    position: { top: "42%", left: "58%" },
+    position: { top: "55%", left: "52%" },
     metrics: [
       { label: "Sales/hr", value: "$89", status: "warning" },
       { label: "Tip %", value: "12.3%", status: "bad" },
       { label: "Avg Check", value: "$42", status: "bad" },
     ],
-    lineAngle: 15,
+    lineAngle: -80,
     lineLength: 100,
   },
   {
     id: "server-3",
     name: "Alex R.",
-    position: { top: "28%", left: "78%" },
+    position: { top: "45%", left: "75%" },
     metrics: [
       { label: "Sales/hr", value: "$142", status: "good" },
       { label: "Tip %", value: "18.2%", status: "good" },
       { label: "Avg Check", value: "$54", status: "warning" },
     ],
-    lineAngle: 60,
-    lineLength: 90,
+    lineAngle: 45,
+    lineLength: 100,
   },
 ];
 
