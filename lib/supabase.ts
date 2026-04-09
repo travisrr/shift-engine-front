@@ -13,59 +13,78 @@ function isValidHttpUrl(url: string): boolean {
   }
 }
 
-function checkConfiguration(): boolean {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+function normalizeSupabaseUrl(url: string): string | null {
+  // If it's already a valid HTTP URL, use it
+  if (isValidHttpUrl(url)) {
+    return url
+  }
+
+  // If it looks like just a project ref (alphanumeric, no protocol, no dots except maybe in domain)
+  // Auto-complete to the standard Supabase URL format
+  const projectRefPattern = /^[a-z0-9]{20,}$/i
+  if (projectRefPattern.test(url)) {
+    return `https://${url}.supabase.co`
+  }
+
+  return null
+}
+
+function checkConfiguration(): { valid: boolean; normalizedUrl?: string } {
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   // Debug logging (only in browser)
   if (typeof window !== 'undefined') {
     console.log('[Supabase] Env check:', {
-      hasUrl: !!supabaseUrl,
+      hasUrl: !!rawUrl,
       hasKey: !!supabaseAnonKey,
-      urlLength: supabaseUrl?.length,
+      urlLength: rawUrl?.length,
       keyLength: supabaseAnonKey?.length,
     })
   }
 
   // Must have both values
-  if (!supabaseUrl && !supabaseAnonKey) {
+  if (!rawUrl && !supabaseAnonKey) {
     configError = 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set. If you just added these, please redeploy your app.'
-    return false
+    return { valid: false }
   }
-  if (!supabaseUrl) {
+  if (!rawUrl) {
     configError = 'NEXT_PUBLIC_SUPABASE_URL is not set'
-    return false
+    return { valid: false }
   }
   if (!supabaseAnonKey) {
     configError = 'NEXT_PUBLIC_SUPABASE_ANON_KEY is not set'
-    return false
+    return { valid: false }
   }
-  if (supabaseUrl.includes('placeholder')) {
+  if (rawUrl.includes('placeholder')) {
     configError = 'NEXT_PUBLIC_SUPABASE_URL contains placeholder value'
-    return false
+    return { valid: false }
   }
   if (supabaseAnonKey === 'placeholder') {
     configError = 'NEXT_PUBLIC_SUPABASE_ANON_KEY contains placeholder value'
-    return false
+    return { valid: false }
   }
-  if (!isValidHttpUrl(supabaseUrl)) {
-    configError = `NEXT_PUBLIC_SUPABASE_URL is not a valid URL: ${supabaseUrl.substring(0, 20)}...`
-    return false
+
+  // Try to normalize the URL (handle project ref vs full URL)
+  const normalizedUrl = normalizeSupabaseUrl(rawUrl)
+  if (!normalizedUrl) {
+    configError = `NEXT_PUBLIC_SUPABASE_URL is not valid. Got: "${rawUrl.substring(0, 30)}${rawUrl.length > 30 ? '...' : ''}". Expected format: https://your-project-ref.supabase.co or just your-project-ref`
+    return { valid: false }
   }
 
   configError = null
-  return true
+  return { valid: true, normalizedUrl }
 }
 
 export function getSupabaseClient(): SupabaseClient | null {
-  if (!checkConfiguration()) return null
+  const config = checkConfiguration()
+  if (!config.valid) return null
   if (supabaseInstance) return supabaseInstance
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
   try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+    supabaseInstance = createClient(config.normalizedUrl!, supabaseAnonKey)
     return supabaseInstance
   } catch (err) {
     console.error('Failed to create Supabase client:', err)
