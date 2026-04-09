@@ -41,7 +41,7 @@ const serverMetrics: ServerMetric[] = [
   },
   {
     id: "server-3",
-    name: "Alex R.",
+    name: "Monique L.",
     position: { top: "52%", left: "85%" },
     calloutPosition: { top: "78%", left: "60%" },
     metrics: [
@@ -147,7 +147,7 @@ function ConnectionLines() {
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Alex R. dot (right server) to her callout box */}
+      {/* Line from Monique L. dot (right server) to her callout box */}
       <line
         x1="85%"
         y1="52%"
