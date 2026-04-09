@@ -18,16 +18,16 @@ export default function Navbar() {
         </Link>
 
         {/* Center nav links - hidden on mobile */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <Link
             href="#testimonials"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-shift-green"
+            className="rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-all hover:border-shift-green hover:text-shift-green hover:bg-shift-green/5"
           >
             Testimonials
           </Link>
           <Link
             href="#articles"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-shift-green"
+            className="rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-all hover:border-shift-green hover:text-shift-green hover:bg-shift-green/5"
           >
             Articles
           </Link>

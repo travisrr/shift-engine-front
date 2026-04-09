@@ -21,7 +21,7 @@ const serverMetrics: ServerMetric[] = [
     id: "server-1",
     name: "Sarah M.",
     position: { top: "38%", left: "28%" },
-    calloutPosition: { top: "8%", left: "8%" },
+    calloutPosition: { top: "16%", left: "12%" },
     metrics: [
       { label: "Sales/hr", value: "$127", status: "good" },
       { label: "Tip %", value: "21.5%", status: "good" },
@@ -43,7 +43,7 @@ const serverMetrics: ServerMetric[] = [
     id: "server-3",
     name: "Alex R.",
     position: { top: "52%", left: "85%" },
-    calloutPosition: { top: "75%", left: "35%" },
+    calloutPosition: { top: "63%", left: "60%" },
     metrics: [
       { label: "Sales/hr", value: "$142", status: "good" },
       { label: "Tip %", value: "18.2%", status: "good" },
@@ -125,12 +125,12 @@ function ServerCallout({ server }: { server: ServerMetric }) {
 function ConnectionLines() {
   return (
     <svg className="pointer-events-none absolute inset-0 z-[15] h-full w-full overflow-visible">
-      {/* Line from Sarah M. dot (left server) to her callout box (top-left) */}
+      {/* Line from Sarah M. dot (left server) to her callout box (closer top-left) */}
       <line
         x1="28%"
         y1="38%"
-        x2="8%"
-        y2="8%"
+        x2="12%"
+        y2="16%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
@@ -147,12 +147,12 @@ function ConnectionLines() {
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Alex R. dot (right server) to her callout box (bottom) */}
+      {/* Line from Alex R. dot (right server) to her callout box (closer bottom) */}
       <line
         x1="85%"
         y1="52%"
-        x2="35%"
-        y2="75%"
+        x2="60%"
+        y2="63%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
