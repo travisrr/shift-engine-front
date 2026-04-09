@@ -32,7 +32,7 @@ const serverMetrics: ServerMetric[] = [
     id: "server-2",
     name: "Jordan K.",
     position: { top: "55%", left: "54%" },
-    calloutPosition: { top: "23%", left: "72%" },
+    calloutPosition: { top: "18%", left: "72%" },
     metrics: [
       { label: "Sales/hr", value: "$89", status: "warning" },
       { label: "Tip %", value: "12.3%", status: "bad" },
@@ -141,7 +141,7 @@ function ConnectionLines() {
         x1="54%"
         y1="55%"
         x2="72%"
-        y2="23%"
+        y2="18%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
