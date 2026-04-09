@@ -32,7 +32,7 @@ const serverMetrics: ServerMetric[] = [
     id: "server-2",
     name: "Jordan K.",
     position: { top: "55%", left: "54%" },
-    calloutPosition: { top: "8%", left: "72%" },
+    calloutPosition: { top: "38%", left: "72%" },
     metrics: [
       { label: "Sales/hr", value: "$89", status: "warning" },
       { label: "Tip %", value: "12.3%", status: "bad" },
@@ -43,7 +43,7 @@ const serverMetrics: ServerMetric[] = [
     id: "server-3",
     name: "Alex R.",
     position: { top: "52%", left: "85%" },
-    calloutPosition: { top: "63%", left: "60%" },
+    calloutPosition: { top: "93%", left: "60%" },
     metrics: [
       { label: "Sales/hr", value: "$142", status: "good" },
       { label: "Tip %", value: "18.2%", status: "good" },
@@ -136,23 +136,23 @@ function ConnectionLines() {
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Jordan K. dot (middle server) to his callout box (top-right) */}
+      {/* Line from Jordan K. dot (middle server) to his callout box (moved down) */}
       <line
         x1="54%"
         y1="55%"
         x2="72%"
-        y2="8%"
+        y2="38%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Alex R. dot (right server) to her callout box (closer bottom) */}
+      {/* Line from Alex R. dot (right server) to her callout box (moved down 30%) */}
       <line
         x1="85%"
         y1="52%"
         x2="60%"
-        y2="63%"
+        y2="93%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
