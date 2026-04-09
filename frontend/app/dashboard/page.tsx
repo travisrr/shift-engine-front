@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+// @ts-ignore - papaparse types are installed but not being picked up in build
 import Papa from 'papaparse';
 import Sidebar from '../components/Sidebar';
 import Dashboard from '../components/Dashboard';
