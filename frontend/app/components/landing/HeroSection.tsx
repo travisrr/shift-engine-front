@@ -32,20 +32,20 @@ export default function HeroSection() {
 
         {/* ── Floating KPI Badges ── */}
         <div
-          className="kpi-badge kpi-badge-1 absolute top-[15%] left-[15%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
+          className="kpi-badge kpi-badge-1 absolute top-[5%] left-[5%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
         >
           <span className="text-kpi-good">🟢 $201/hr Sales</span>
         </div>
 
         <div
-          className="kpi-badge kpi-badge-2 absolute top-[25%] right-[10%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
+          className="kpi-badge kpi-badge-2 absolute top-[5%] right-[5%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
           style={{ animationDelay: "1.5s" }}
         >
           <span className="text-kpi-bad">🔴 14% Tip Avg (Rushing)</span>
         </div>
 
         <div
-          className="kpi-badge kpi-badge-3 absolute bottom-[35%] left-[45%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
+          className="kpi-badge kpi-badge-3 absolute bottom-[15%] left-[28%] z-10 hidden animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] md:flex"
           style={{ animationDelay: "0.7s" }}
         >
           <span className="text-kpi-good">🟢 $71 Avg Check (Upselling)</span>

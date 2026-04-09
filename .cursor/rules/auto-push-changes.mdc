@@ -1,0 +1,41 @@
+---
+description: Automatically push changes to the repository after each task
+alwaysApply: true
+---
+
+# Auto-Push Changes
+
+After completing each task or set of related changes, the agent MUST push those changes to the remote repository.
+
+## Instructions
+
+1. When you finish a task (or a logical group of related changes), check if there are uncommitted changes
+2. If there are changes:
+   - Stage all relevant files with `git add`
+   - Create a descriptive commit message
+   - Push to the remote repository with `git push`
+3. Do not wait for the user to explicitly ask you to push
+4. This rule applies to all tasks unless the user explicitly states not to push
+
+## Commit Message Format
+
+Write clear, concise commit messages that describe what was done:
+- Use present tense (e.g., "Add feature" not "Added feature")
+- Be specific about what changed
+- Keep the first line under 72 characters
+
+## Example
+
+```
+# After completing a task...
+
+# Check status
+git status
+
+# Add and commit
+git add .
+git commit -m "Add authentication middleware to API routes"
+
+# Push to remote
+git push
+```
