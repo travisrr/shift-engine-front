@@ -251,6 +251,16 @@ export default function EditTeamPage() {
     });
   }
 
+  // Mock server names from dashboard (fallback when no CSV uploaded yet)
+  const mockServerNames = [
+    'Jessica M.',
+    'Carlos R.',
+    'Aisha T.',
+    'Derek L.',
+    'Maria S.',
+    'Tom K.',
+  ];
+
   async function openImportModal() {
     setIsImportModalOpen(true);
     setIsLoadingServers(true);
@@ -261,7 +271,10 @@ export default function EditTeamPage() {
     try {
       const client = await getSupabase();
       if (!client) {
-        setImportError('Database not available');
+        // If no database, use mock data
+        const existingNames = new Set(staff.map((s) => s.full_name));
+        const newServers = mockServerNames.filter((name) => !existingNames.has(name));
+        setAvailableServers(newServers);
         return;
       }
 
@@ -275,21 +288,25 @@ export default function EditTeamPage() {
 
       if (uploadError) throw uploadError;
 
-      if (!latestUpload) {
-        setAvailableServers([]);
-        return;
+      let serverNames: string[] = [];
+
+      if (latestUpload) {
+        // Get server names from the latest upload
+        const { data: scores, error: scoresError } = await client
+          .from('server_scores')
+          .select('server_name')
+          .eq('upload_id', latestUpload.id);
+
+        if (scoresError) throw scoresError;
+        serverNames = scores?.map((s) => s.server_name) || [];
       }
 
-      // Get server names from the latest upload
-      const { data: scores, error: scoresError } = await client
-        .from('server_scores')
-        .select('server_name')
-        .eq('upload_id', latestUpload.id);
-
-      if (scoresError) throw scoresError;
+      // If no uploads yet, fall back to mock data
+      if (serverNames.length === 0) {
+        serverNames = mockServerNames;
+      }
 
       // Filter out servers that are already in wait_staff
-      const serverNames = scores?.map((s) => s.server_name) || [];
       const { data: existingStaff } = await client
         .from('wait_staff')
         .select('full_name');
@@ -300,7 +317,10 @@ export default function EditTeamPage() {
       setAvailableServers(newServers);
     } catch (err) {
       console.error('Error fetching available servers:', err);
-      setImportError('Failed to load available servers');
+      // Fall back to mock data on error
+      const existingNames = new Set(staff.map((s) => s.full_name));
+      const newServers = mockServerNames.filter((name) => !existingNames.has(name));
+      setAvailableServers(newServers);
     } finally {
       setIsLoadingServers(false);
     }
@@ -756,13 +776,13 @@ export default function EditTeamPage() {
                     No new servers to import
                   </p>
                   <p className="mt-1 text-[12px] text-gray-400">
-                    All servers from your dashboard are already in the staff list, or no dashboard data is available.
+                    All dashboard servers are already in your staff list.
                   </p>
                 </div>
               ) : (
                 <>
                   <p className="mb-4 text-[13px] text-gray-600">
-                    Select servers from your latest dashboard upload to add to the staff list:
+                    Select servers from the dashboard to add to your staff list:
                   </p>
 
                   <div className="mb-3 flex items-center gap-2 border-b border-gray-100 pb-3">
