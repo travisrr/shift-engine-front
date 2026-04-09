@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
-import PointillismBackground from "./components/landing/PointillismBackground";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,16 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="relative min-h-full font-sans">
-        {/* Digital Pointillism background - subtle tech sophistication */}
-        <div className="pointer-events-none fixed inset-0 z-0">
-          <PointillismBackground
-            particleCount={220}
-            connectionDistance={100}
-            maxConnections={2}
-            className="opacity-60"
-          />
-        </div>
+      <body className="relative min-h-full font-sans bg-[#f7f6f3]">
+        {/* OPTIMIZED: Removed fixed PointillismBackground that was running on every page
+         * The landing page already has optimized PointillismBackground in specific sections.
+         * This fixed background was causing continuous 60fps rendering on all pages.
+         * Now using simple static background color instead.
+         */}
         <div className="relative z-10 flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>
           <footer className="border-t-4 border-shift-brown bg-shift-text-dark px-6 py-12 text-white">

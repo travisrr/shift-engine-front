@@ -80,7 +80,7 @@ const ownershipVisibility: PainPoint[] = [
 
 function PainSolutionCard({ pain, solution }: PainPoint) {
   return (
-    <article className="rounded-2xl border border-shift-border bg-white/95 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+    <article className="rounded-2xl border border-shift-border bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
       <p className="mb-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold tracking-wide text-rose-700 uppercase">
         Pain Point
       </p>
@@ -158,9 +158,9 @@ export default function LandingPage() {
       {/* Hero with Digital Pointillism background - tech sophistication */}
       <div className="relative overflow-hidden">
         <PointillismBackground
-          particleCount={320}
-          connectionDistance={130}
-          maxConnections={3}
+          particleCount={80}  // REDUCED from 320 for performance
+          connectionDistance={100}
+          maxConnections={2}
           className="opacity-70"
         />
         <PhotoRealHero />
@@ -168,7 +168,7 @@ export default function LandingPage() {
 
       {/* How it Works - with dining photo background */}
       <div className="relative">
-        <WhispyBackground intensity="medium" className="opacity-40" />
+        <WhispyBackground intensity="low" className="opacity-40" />
         <PhotoSection
           imageSrc="/lunch-dining-photo-01.webp"
           imageAlt="Busy restaurant lunch service"
@@ -185,7 +185,7 @@ export default function LandingPage() {
             </h2>
 
             <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-2xl border border-shift-border bg-white/95 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+              <div className="rounded-2xl border border-shift-border bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                 <p className="mb-2 text-sm font-semibold text-shift-green">
                   1. Upload
                 </p>
@@ -193,7 +193,7 @@ export default function LandingPage() {
                   Drag Toast (or POS) exports directly into Shift Engine.
                 </p>
               </div>
-              <div className="rounded-2xl border border-shift-border bg-white/95 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+              <div className="rounded-2xl border border-shift-border bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                 <p className="mb-2 text-sm font-semibold text-shift-green">
                   2. Diagnose
                 </p>
@@ -202,7 +202,7 @@ export default function LandingPage() {
                   and guest flow.
                 </p>
               </div>
-              <div className="rounded-2xl border border-shift-border bg-white/95 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm">
+              <div className="rounded-2xl border border-shift-border bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                 <p className="mb-2 text-sm font-semibold text-shift-green">
                   3. Act
                 </p>
@@ -251,7 +251,7 @@ export default function LandingPage() {
 
       {/* Management Time - full-bleed photo background */}
       <div className="relative">
-        <WhispyBackground intensity="high" className="opacity-50" />
+        <WhispyBackground intensity="medium" className="opacity-50" />
         <PhotoSection
           imageSrc="/lunch-dining-photo-03.webp"
           imageAlt="Restaurant manager reviewing service"
@@ -327,7 +327,8 @@ export default function LandingPage() {
           <h2 className="mb-6 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             Give ownership visibility across every unit without being on-site.
           </h2>
-          <div className="mx-auto max-w-2xl rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm">
+          {/* OPTIMIZED: Removed backdrop-blur-sm which causes GPU compositing issues */}
+          <div className="mx-auto max-w-2xl rounded-2xl border border-white/20 bg-white/15 p-6">
             <p className="mb-3 inline-flex rounded-full bg-rose-50/90 px-3 py-1 text-xs font-semibold tracking-wide text-rose-700 uppercase">
               Pain Point
             </p>
@@ -351,13 +352,14 @@ export default function LandingPage() {
       <section className="relative overflow-hidden pb-20 pt-8">
         <div className="absolute inset-0">
           <PointillismBackground
-            particleCount={180}
-            connectionDistance={90}
-            maxConnections={2}
+            particleCount={50}  // REDUCED from 180 for performance
+            connectionDistance={80}
+            maxConnections={1}
             className="opacity-50"
           />
         </div>
-        <div className="relative mx-auto max-w-6xl rounded-3xl border border-shift-border bg-white/95 px-6 py-10 text-center shadow-[0_16px_50px_rgba(0,0,0,0.06)] backdrop-blur-sm sm:px-12">
+        {/* OPTIMIZED: Removed backdrop-blur-sm which causes GPU compositing issues during scroll */}
+        <div className="relative mx-auto max-w-6xl rounded-3xl border border-shift-border bg-white/98 px-6 py-10 text-center shadow-[0_16px_50px_rgba(0,0,0,0.06)] sm:px-12">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Shift Engine brings objective clarity to every shift.
           </h2>

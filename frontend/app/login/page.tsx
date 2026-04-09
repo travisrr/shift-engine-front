@@ -47,10 +47,10 @@ export default function LoginPage() {
     <div className="flex min-h-screen">
       {/* ── Left Panel: Brand Sidebar ── */}
       <div className="login-brand-panel relative hidden flex-col justify-between overflow-hidden bg-shift-green p-10 lg:flex lg:w-[45%]">
-        {/* Floating decorative elements */}
-        <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/5 blur-xl" />
-        <div className="absolute bottom-20 -left-10 h-48 w-48 rounded-full bg-white/5 blur-xl" />
-        <div className="absolute top-1/2 right-1/4 h-32 w-32 rounded-full bg-shift-green-accent/20 blur-2xl" />
+        {/* Floating decorative elements - OPTIMIZED: reduced blur intensity */}
+        <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/5 blur-lg" />
+        <div className="absolute bottom-20 -left-10 h-48 w-48 rounded-full bg-white/5 blur-lg" />
+        <div className="absolute top-1/2 right-1/4 h-32 w-32 rounded-full bg-shift-green-accent/20 blur-xl" />
 
         {/* Logo */}
         <div className="relative z-10">
@@ -72,14 +72,14 @@ export default function LoginPage() {
             scorecards — in seconds, not spreadsheets.
           </p>
 
-          {/* Floating badge preview */}
+          {/* Floating badge preview - OPTIMIZED: removed backdrop-blur-sm */}
           <div className="mt-8 flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-lg bg-white/15 px-4 py-2.5">
               <span className="text-sm font-bold text-emerald-300">
                 🟢 $201/hr Sales
               </span>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-lg bg-white/15 px-4 py-2.5">
               <span className="text-sm font-bold text-white/90">
                 ⚙️ 94 Score
               </span>

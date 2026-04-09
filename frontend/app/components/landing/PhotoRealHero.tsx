@@ -131,9 +131,9 @@ function ServerCallout({ server }: { server: ServerMetric }) {
         />
       </svg>
 
-      {/* Callout box */}
+      {/* Callout box - OPTIMIZED: removed backdrop-blur-sm */}
       <div
-        className={`absolute z-20 rounded-xl border border-white/30 bg-white/95 p-3 shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur-sm ${calloutSide === "left" ? "ml-4" : "-ml-4 -translate-x-full"}`}
+        className={`absolute z-20 rounded-xl border border-white/30 bg-white p-3 shadow-[0_10px_40px_rgba(0,0,0,0.25)] ${calloutSide === "left" ? "ml-4" : "-ml-4 -translate-x-full"}`}
         style={{
           transform: `translate(${lineEndX}px, ${lineEndY}px) ${calloutSide === "right" ? "translateX(-100%)" : ""}`,
           minWidth: "140px",
@@ -207,8 +207,8 @@ export default function PhotoRealHero() {
               <ServerCallout key={server.id} server={server} />
             ))}
 
-            {/* Corner label */}
-            <div className="absolute bottom-4 left-4 rounded-lg bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+            {/* Corner label - OPTIMIZED: removed backdrop-blur-sm */}
+            <div className="absolute bottom-4 left-4 rounded-lg bg-black/70 px-3 py-1.5">
               <p className="text-xs font-medium text-white">
                 Live floor metrics · NYC
               </p>

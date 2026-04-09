@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface Particle {
   id: number;
@@ -23,16 +23,6 @@ interface SpeedLine {
   opacity: number;
 }
 
-interface Wisp {
-  id: number;
-  x: number;
-  y: number;
-  scale: number;
-  duration: number;
-  delay: number;
-  opacity: number;
-}
-
 export default function WhispyBackground({
   intensity = "medium",
   className = "",
@@ -42,51 +32,74 @@ export default function WhispyBackground({
 }) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [speedLines, setSpeedLines] = useState<SpeedLine[]>([]);
-  const [wisps, setWisps] = useState<Wisp[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(true);
 
+  // REDUCED: Significantly lower counts for performance
+  // Original: 15 particles, 8 speed lines, 6 wisps, 3 orbs
+  // New: 5-8 particles, 3-4 speed lines, no wisps (most expensive), 2 orbs
   useEffect(() => {
-    const multiplier = intensity === "low" ? 0.5 : intensity === "high" ? 1.5 : 1;
+    // Reduced multipliers for better performance
+    const multiplier = intensity === "low" ? 0.4 : intensity === "high" ? 0.8 : 0.6;
 
-    // Generate floating particles (dust motes)
-    const newParticles: Particle[] = Array.from({ length: Math.floor(15 * multiplier) }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 3 + 1,
-      duration: Math.random() * 20 + 15,
-      delay: Math.random() * 10,
-      opacity: Math.random() * 0.3 + 0.1,
-    }));
+    // Generate floating particles (dust motes) - REDUCED
+    const newParticles: Particle[] = Array.from(
+      { length: Math.floor(6 * multiplier) },
+      (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: Math.random() * 2 + 1, // Smaller particles
+        duration: Math.random() * 20 + 20, // Slower animation
+        delay: Math.random() * 10,
+        opacity: Math.random() * 0.2 + 0.1, // Lower opacity
+      })
+    );
     setParticles(newParticles);
 
-    // Generate speed lines (diagonal motion streaks)
-    const newSpeedLines: SpeedLine[] = Array.from({ length: Math.floor(8 * multiplier) }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      width: Math.random() * 150 + 50,
-      angle: Math.random() * 30 - 15, // -15 to 15 degrees
-      duration: Math.random() * 3 + 2,
-      delay: Math.random() * 8,
-      opacity: Math.random() * 0.15 + 0.05,
-    }));
+    // Generate speed lines (motion streaks) - REDUCED
+    const newSpeedLines: SpeedLine[] = Array.from(
+      { length: Math.floor(3 * multiplier) },
+      (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        width: Math.random() * 100 + 50,
+        angle: Math.random() * 30 - 15,
+        duration: Math.random() * 3 + 2,
+        delay: Math.random() * 8,
+        opacity: Math.random() * 0.1 + 0.05,
+      })
+    );
     setSpeedLines(newSpeedLines);
-
-    // Generate steam wisps
-    const newWisps: Wisp[] = Array.from({ length: Math.floor(6 * multiplier) }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      scale: Math.random() * 0.5 + 0.5,
-      duration: Math.random() * 25 + 20,
-      delay: Math.random() * 15,
-      opacity: Math.random() * 0.2 + 0.1,
-    }));
-    setWisps(newWisps);
   }, [intensity]);
 
+  // IntersectionObserver to pause expensive animations when off-screen
+  useEffect(() => {
+    if (!containerRef.current || !("IntersectionObserver" in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+        // Toggle CSS animation play state based on visibility
+        if (containerRef.current) {
+          containerRef.current.style.animationPlayState = isVisibleRef.current
+            ? "running"
+            : "paused";
+        }
+      },
+      { threshold: 0.1, rootMargin: "50px" }
+    );
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+    <div
+      ref={containerRef}
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+    >
       {/* Floating Particles - subtle dust motes */}
       {particles.map((p) => (
         <div
@@ -100,15 +113,17 @@ export default function WhispyBackground({
             opacity: p.opacity,
             animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`,
+            // OPTIMIZED: Use will-change only on animated elements
+            willChange: "transform, opacity",
           }}
         />
       ))}
 
-      {/* Speed Lines - motion streaks suggesting fast movement */}
+      {/* Speed Lines - motion streaks */}
       {speedLines.map((line) => (
         <div
           key={`speedline-${line.id}`}
-          className="whispy-speedline absolute h-[1px] bg-gradient-to-r from-transparent via-shift-green-accent/40 to-transparent"
+          className="whispy-speedline absolute h-[1px] bg-gradient-to-r from-transparent via-shift-green-accent/30 to-transparent"
           style={{
             left: `${line.x}%`,
             top: `${line.y}%`,
@@ -117,68 +132,31 @@ export default function WhispyBackground({
             opacity: line.opacity,
             animationDuration: `${line.duration}s`,
             animationDelay: `${line.delay}s`,
+            willChange: "transform, opacity",
           }}
         />
       ))}
 
-      {/* Steam Wisps - soft rising effects like kitchen steam */}
-      {wisps.map((wisp) => (
-        <div
-          key={`wisp-${wisp.id}`}
-          className="whispy-wisp absolute"
-          style={{
-            left: `${wisp.x}%`,
-            top: `${wisp.y}%`,
-            transform: `scale(${wisp.scale})`,
-            opacity: wisp.opacity,
-            animationDuration: `${wisp.duration}s`,
-            animationDelay: `${wisp.delay}s`,
-          }}
-        >
-          <svg
-            width="120"
-            height="80"
-            viewBox="0 0 120 80"
-            fill="none"
-            className="text-shift-brown/30"
-          >
-            <path
-              d="M20 70 Q 30 40, 25 20 T 30 5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-              className="wisp-path-1"
-            />
-            <path
-              d="M45 75 Q 55 45, 50 25 T 55 10"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-              className="wisp-path-2"
-            />
-            <path
-              d="M70 72 Q 80 42, 75 22 T 80 8"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-              className="wisp-path-3"
-            />
-          </svg>
-        </div>
-      ))}
+      {/* REMOVED: Steam Wisps - these had expensive SVG path morphing animations
+       * that were causing significant GPU load. The speed lines + particles
+       * provide enough atmospheric motion without the complexity.
+       */}
 
-      {/* Ambient Gradient Orbs - soft floating color washes */}
-      <div className="whispy-orb absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-shift-green/5 blur-3xl" />
+      {/* Ambient Gradient Orbs - soft floating color washes - REDUCED from 3 to 2 */}
       <div
-        className="whispy-orb absolute -right-32 bottom-1/4 h-96 w-96 rounded-full bg-shift-brown/5 blur-3xl"
-        style={{ animationDelay: "2s" }}
+        className="absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-shift-green/5 blur-3xl"
+        style={{
+          animation: "orb-pulse 15s ease-in-out infinite",
+          willChange: "transform, opacity",
+        }}
       />
       <div
-        className="whispy-orb absolute left-1/3 -bottom-32 h-64 w-64 rounded-full bg-shift-green-accent/5 blur-3xl"
-        style={{ animationDelay: "4s" }}
+        className="absolute -right-32 bottom-1/4 h-64 w-64 rounded-full bg-shift-brown/5 blur-3xl"
+        style={{
+          animationDelay: "3s",
+          animation: "orb-pulse 15s ease-in-out infinite 3s",
+          willChange: "transform, opacity",
+        }}
       />
     </div>
   );

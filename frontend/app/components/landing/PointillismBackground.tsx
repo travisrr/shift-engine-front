@@ -11,6 +11,9 @@ interface Particle {
   size: number;
   opacity: number;
   blur: number;
+  // Grid cell for spatial partitioning (to avoid O(n²) checks)
+  gridX?: number;
+  gridY?: number;
 }
 
 interface PointillismBackgroundProps {
@@ -18,18 +21,25 @@ interface PointillismBackgroundProps {
   particleCount?: number;
   connectionDistance?: number;
   maxConnections?: number;
+  // New prop: pause animation when not visible to save performance
+  pauseWhenOffscreen?: boolean;
 }
 
 export default function PointillismBackground({
   className = "",
-  particleCount = 280,
-  connectionDistance = 120,
-  maxConnections = 3,
+  // REDUCED: Default from 280 to 100 for performance
+  particleCount = 100,
+  connectionDistance = 100,
+  maxConnections = 2,
+  pauseWhenOffscreen = true,
 }: PointillismBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>(0);
   const mouseRef = useRef({ x: -1000, y: -1000 });
+  const isVisibleRef = useRef(true);
+  const lastFrameTimeRef = useRef(0);
+  const frameSkipRef = useRef(0);
 
   // Initialize particles with depth layers for volumetric effect
   const initParticles = useCallback(
@@ -54,8 +64,8 @@ export default function PointillismBackground({
         const baseOpacity = z < 0.3 ? 0.45 : z < 0.6 ? 0.35 : 0.2;
         const opacity = baseOpacity + Math.random() * 0.15;
 
-        // Blur based on depth (shallow depth of field effect)
-        const blur = z > 0.7 ? 2 + Math.random() * 2 : z > 0.4 ? 0.5 : 0;
+        // Blur based on depth (shallow depth of field effect) - REDUCED
+        const blur = z > 0.8 ? 1 : z > 0.5 ? 0.5 : 0;
 
         particles.push({
           x: Math.random() * width,
@@ -74,6 +84,29 @@ export default function PointillismBackground({
     [particleCount]
   );
 
+  // Spatial grid for efficient neighbor lookups (avoids O(n²))
+  const buildSpatialGrid = useCallback(
+    (particles: Particle[], cellSize: number, width: number, height: number) => {
+      const grid = new Map<string, number[]>();
+
+      particles.forEach((p, index) => {
+        const gridX = Math.floor(p.x / cellSize);
+        const gridY = Math.floor(p.y / cellSize);
+        p.gridX = gridX;
+        p.gridY = gridY;
+
+        const key = `${gridX},${gridY}`;
+        if (!grid.has(key)) {
+          grid.set(key, []);
+        }
+        grid.get(key)!.push(index);
+      });
+
+      return grid;
+    },
+    []
+  );
+
   // Draw the pointillism frame
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -86,42 +119,62 @@ export default function PointillismBackground({
       // Sort by depth (draw background first)
       const sortedParticles = [...particles].sort((a, b) => b.z - a.z);
 
+      // OPTIMIZED: Use spatial grid for connections instead of O(n²)
+      const cellSize = connectionDistance;
+      const grid = buildSpatialGrid(sortedParticles, cellSize, width, height);
+
       // Draw connections (plexus mesh) - only for mid and foreground particles
       ctx.lineWidth = 0.5;
 
       for (let i = 0; i < sortedParticles.length; i++) {
         const p1 = sortedParticles[i];
-        if (p1.z > 0.6) continue; // Don't connect distant background particles
+        if (p1.z > 0.6 || p1.gridX === undefined || p1.gridY === undefined) continue;
 
         let connections = 0;
 
-        for (let j = i + 1; j < sortedParticles.length; j++) {
-          const p2 = sortedParticles[j];
-          if (p2.z > 0.6) continue;
+        // Only check neighboring grid cells (9 cells total)
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const key = `${p1.gridX + dx},${p1.gridY + dy}`;
+            const cellIndices = grid.get(key);
+            if (!cellIndices) continue;
 
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+            for (const j of cellIndices) {
+              if (j <= i) continue; // Avoid duplicate checks
 
-          // Connection distance varies by depth
-          const depthAdjustedDistance =
-            connectionDistance * (1 - (p1.z + p2.z) * 0.3);
+              const p2 = sortedParticles[j];
+              if (p2.z > 0.6) continue;
 
-          if (dist < depthAdjustedDistance && connections < maxConnections) {
-            // Opacity based on distance and depth
-            const normalizedDist = dist / depthAdjustedDistance;
-            const lineOpacity =
-              (1 - normalizedDist) * 0.15 * (1 - (p1.z + p2.z) * 0.4);
+              const distX = p1.x - p2.x;
+              const distY = p1.y - p2.y;
+              const distSq = distX * distX + distY * distY;
 
-            // Charcoal-grey connections
-            ctx.strokeStyle = `rgba(80, 85, 90, ${lineOpacity})`;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
+              // Connection distance varies by depth
+              const depthAdjustedDistance =
+                connectionDistance * (1 - (p1.z + p2.z) * 0.3);
+              const distThresholdSq = depthAdjustedDistance * depthAdjustedDistance;
 
-            connections++;
+              if (distSq < distThresholdSq && connections < maxConnections) {
+                const dist = Math.sqrt(distSq);
+                // Opacity based on distance and depth
+                const normalizedDist = dist / depthAdjustedDistance;
+                const lineOpacity =
+                  (1 - normalizedDist) * 0.15 * (1 - (p1.z + p2.z) * 0.4);
+
+                // Charcoal-grey connections
+                ctx.strokeStyle = `rgba(80, 85, 90, ${lineOpacity})`;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+
+                connections++;
+                if (connections >= maxConnections) break;
+              }
+            }
+            if (connections >= maxConnections) break;
           }
+          if (connections >= maxConnections) break;
         }
       }
 
@@ -132,23 +185,33 @@ export default function PointillismBackground({
           continue;
         }
 
-        ctx.save();
-
-        // Apply blur for depth-of-field effect
+        // OPTIMIZED: Pre-render blurred circles instead of using ctx.filter
+        // ctx.filter is expensive and causes GPU texture re-renders
         if (p.blur > 0) {
-          ctx.filter = `blur(${p.blur}px)`;
+          // Draw a pre-blurred approximation using radial gradient
+          const blurRadius = p.size + p.blur * 2;
+          const gradient = ctx.createRadialGradient(
+            p.x, p.y, 0,
+            p.x, p.y, blurRadius
+          );
+          const alpha = p.opacity * 0.5;
+          gradient.addColorStop(0, `rgba(70, 75, 80, ${alpha})`);
+          gradient.addColorStop(1, `rgba(70, 75, 80, 0)`);
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, blurRadius, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Core dot for sharp particles
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(70, 75, 80, ${p.opacity})`;
+          ctx.fill();
         }
 
-        // Draw stippled particle with volumetric shading
-        // Core dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(70, 75, 80, ${p.opacity})`;
-        ctx.fill();
-
-        // Outer stippling for depth effect (simulating 3D form)
-        if (p.z < 0.5) {
-          const stippleCount = Math.floor(4 + (1 - p.z) * 6);
+        // REDUCED: Simplified stippling - only for very close foreground particles
+        if (p.z < 0.3) {
+          const stippleCount = 3; // Reduced from 4-10
           for (let s = 0; s < stippleCount; s++) {
             const angle = (s / stippleCount) * Math.PI * 2 + Math.random() * 0.5;
             const stippleDist = p.size * (1.3 + Math.random() * 0.8);
@@ -162,8 +225,6 @@ export default function PointillismBackground({
             ctx.fill();
           }
         }
-
-        ctx.restore();
       }
 
       // Subtle radial gradient overlay for high-key lighting effect
@@ -182,40 +243,60 @@ export default function PointillismBackground({
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
     },
-    [connectionDistance, maxConnections]
+    [connectionDistance, maxConnections, buildSpatialGrid]
   );
 
-  // Animation loop
+  // Animation loop with frame skipping when not visible
   const animate = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    (ctx: CanvasRenderingContext2D, width: number, height: number, timestamp: number) => {
+      // Skip frames when not visible (reduce to 10fps instead of 60fps)
+      if (!isVisibleRef.current) {
+        if (frameSkipRef.current < 5) {
+          frameSkipRef.current++;
+          animationRef.current = requestAnimationFrame((t) =>
+            animate(ctx, width, height, t)
+          );
+          return;
+        }
+        frameSkipRef.current = 0;
+      }
+
       const particles = particlesRef.current;
       const mouse = mouseRef.current;
+
+      // Only update mouse repulsion every 3rd frame for performance
+      const shouldUpdateMouse = timestamp - lastFrameTimeRef.current > 50;
 
       for (const p of particles) {
         // Update position
         p.x += p.vx;
         p.y += p.vy;
 
-        // Gentle mouse repulsion for interactivity
-        const dx = p.x - mouse.x;
-        const dy = p.y - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        // Gentle mouse repulsion for interactivity (throttled)
+        if (shouldUpdateMouse) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const distSq = dx * dx + dy * dy;
 
-        if (dist < 150 && dist > 0) {
-          const force = (150 - dist) / 150;
-          p.vx += (dx / dist) * force * 0.02;
-          p.vy += (dy / dist) * force * 0.02;
+          if (distSq < 22500 && distSq > 0) { // 150^2 = 22500
+            const dist = Math.sqrt(distSq);
+            const force = (150 - dist) / 150;
+            p.vx += (dx / dist) * force * 0.02;
+            p.vy += (dy / dist) * force * 0.02;
+          }
         }
 
         // Velocity dampening
         p.vx *= 0.999;
         p.vy *= 0.999;
 
-        // Gentle return to base movement
-        const targetVx = (Math.random() - 0.5) * (p.z < 0.4 ? 0.3 : 0.1);
-        const targetVy = (Math.random() - 0.5) * (p.z < 0.4 ? 0.3 : 0.1);
-        p.vx += (targetVx - p.vx) * 0.001;
-        p.vy += (targetVy - p.vy) * 0.001;
+        // Gentle return to base movement (update less frequently when offscreen)
+        if (isVisibleRef.current || Math.random() > 0.7) {
+          const targetVx = (Math.random() - 0.5) * (p.z < 0.4 ? 0.3 : 0.1);
+          const targetVy = (Math.random() - 0.5) * (p.z < 0.4 ? 0.3 : 0.1);
+          p.vx += (targetVx - p.vx) * 0.001;
+          p.vy += (targetVy - p.vy) * 0.001;
+        }
 
         // Wrap around edges
         if (p.x < -10) p.x = width + 10;
@@ -224,8 +305,14 @@ export default function PointillismBackground({
         if (p.y > height + 10) p.y = -10;
       }
 
+      if (shouldUpdateMouse) {
+        lastFrameTimeRef.current = timestamp;
+      }
+
       draw(ctx, width, height);
-      animationRef.current = requestAnimationFrame(() => animate(ctx, width, height));
+      animationRef.current = requestAnimationFrame((t) =>
+        animate(ctx, width, height, t)
+      );
     },
     [draw]
   );
@@ -249,7 +336,9 @@ export default function PointillismBackground({
     particlesRef.current = initParticles(rect.width, rect.height);
 
     // Start animation
-    animationRef.current = requestAnimationFrame(() => animate(ctx, rect.width, rect.height));
+    animationRef.current = requestAnimationFrame((t) =>
+      animate(ctx, rect.width, rect.height, t)
+    );
 
     // Handle resize
     const handleResize = () => {
@@ -273,6 +362,18 @@ export default function PointillismBackground({
       mouseRef.current = { x: -1000, y: -1000 };
     };
 
+    // IntersectionObserver to pause animation when off-screen
+    let observer: IntersectionObserver | null = null;
+    if (pauseWhenOffscreen && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+        },
+        { threshold: 0.1, rootMargin: "100px" }
+      );
+      observer.observe(canvas);
+    }
+
     window.addEventListener("resize", handleResize);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseleave", handleMouseLeave);
@@ -282,8 +383,9 @@ export default function PointillismBackground({
       window.removeEventListener("resize", handleResize);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
+      observer?.disconnect();
     };
-  }, [initParticles, animate]);
+  }, [initParticles, animate, pauseWhenOffscreen]);
 
   return (
     <canvas
