@@ -1,0 +1,56 @@
+import Link from "next/link";
+
+export default function HeroSection() {
+  return (
+    <header className="grid grid-cols-1 items-center gap-15 py-20 md:grid-cols-2">
+      {/* ── Text Column ── */}
+      <div className="text-center md:text-left">
+        <h1 className="mb-5 text-4xl font-bold leading-tight tracking-tight text-shift-text-dark md:text-5xl lg:text-[3.5rem]">
+          Stop guessing who your best servers are.
+        </h1>
+        <p className="mb-8 text-lg text-shift-text-light md:text-xl">
+          Drop your Toast POS data into Shift-Engine. Instantly see who to
+          reward, who to coach, and who gets the busy Friday shifts.
+        </p>
+        <Link
+          href="#pricing"
+          className="inline-block rounded-md bg-shift-brown px-6 py-3 font-semibold text-white transition-colors hover:bg-shift-brown-hover"
+        >
+          Try it for free
+        </Link>
+      </div>
+
+      {/* ── Visual Column ── */}
+      <div className="relative h-[400px] w-full overflow-visible rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] md:h-[550px]">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 rounded-xl bg-cover bg-center"
+          style={{ backgroundImage: "url('/hero-restaurant.png')" }}
+        />
+        {/* Green overlay */}
+        <div className="absolute inset-0 rounded-xl bg-shift-green/45" />
+
+        {/* ── Floating KPI Badges ── */}
+        <div
+          className="kpi-badge kpi-badge-1 absolute top-[15%] left-[15%] z-10 flex animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] max-md:left-[5%]"
+        >
+          <span className="text-kpi-good">🟢 $201/hr Sales</span>
+        </div>
+
+        <div
+          className="kpi-badge kpi-badge-2 absolute top-[25%] right-[10%] z-10 flex animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)] max-md:right-[5%]"
+          style={{ animationDelay: "1.5s" }}
+        >
+          <span className="text-kpi-bad">🔴 14% Tip Avg (Rushing)</span>
+        </div>
+
+        <div
+          className="kpi-badge kpi-badge-3 absolute bottom-[35%] left-[45%] z-10 flex animate-float items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-[0.95rem] font-bold shadow-[0_10px_25px_rgba(0,0,0,0.3)]"
+          style={{ animationDelay: "0.7s" }}
+        >
+          <span className="text-kpi-good">🟢 $71 Avg Check (Upselling)</span>
+        </div>
+      </div>
+    </header>
+  );
+}

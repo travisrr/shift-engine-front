@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Shift-Engine — Performance Dashboard",
+  title: "Shift-Engine | Restaurant Performance Software",
   description:
-    "Upload Toast data and generate server scorecards to surface actionable insights for your restaurant.",
+    "Drop your Toast POS data into Shift-Engine. Instantly see who to reward, who to coach, and who gets the busy Friday shifts.",
 };
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full bg-white font-sans">{children}</body>
+      <body className="min-h-full font-sans">{children}</body>
     </html>
   );
 }
