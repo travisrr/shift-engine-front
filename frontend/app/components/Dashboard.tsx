@@ -60,7 +60,7 @@ export default function Dashboard({
       : null;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 lg:ml-60">
+    <div className="min-h-screen bg-[#FAF8F5] lg:ml-60">
       <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* ── Header with Date Picker ── */}
         <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
