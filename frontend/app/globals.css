@@ -113,3 +113,25 @@ body {
 /* Badge 3 – center-bottom, green dot */
 .kpi-badge-3::before { height: 60px; }
 .kpi-badge-3::after  { top: calc(100% + 60px); background-color: #2E7D32; }
+
+/* ═══════════════════════════════════════════
+   Login Page
+   ═══════════════════════════════════════════ */
+
+/* Brand panel: subtle gradient overlay */
+.login-brand-panel {
+  background: linear-gradient(
+    160deg,
+    #3A4F39 0%,
+    #2d3e2c 40%,
+    #3A4F39 100%
+  );
+}
+
+/* Input hover lift */
+.login-input:hover {
+  border-color: #bbb;
+}
+.login-input:focus {
+  box-shadow: 0 0 0 3px rgba(58, 79, 57, 0.12);
+}
