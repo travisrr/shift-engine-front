@@ -73,8 +73,18 @@ export default function EditTeamPage() {
       const client = await getSupabase();
       if (!client) {
         setStaff([]);
+        setLoading(false);
         return;
       }
+
+      // Check if Supabase is actually configured
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        setStaff([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await client
         .from('wait_staff')
         .select('*')
@@ -84,6 +94,7 @@ export default function EditTeamPage() {
       setStaff(data || []);
     } catch (err) {
       console.error('Error fetching staff:', err);
+      setStaff([]);
     } finally {
       setLoading(false);
     }
@@ -364,6 +375,14 @@ export default function EditTeamPage() {
     try {
       const client = await getSupabase();
       if (!client) throw new Error('Database not available');
+
+      // Check if Supabase is actually configured (not just placeholder values)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        throw new Error(
+          'Database not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables in your Vercel project settings.'
+        );
+      }
 
       const today = new Date().toISOString().split('T')[0];
       const newStaff = Array.from(selectedServers).map((name) => ({
