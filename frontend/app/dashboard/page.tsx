@@ -33,14 +33,16 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen w-full">
       <Sidebar onFileUpload={handleFileUpload} />
-      <Dashboard
-        servers={servers}
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        hasData={servers.length > 0}
-      />
+      <div className="flex-1">
+        <Dashboard
+          servers={servers}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          hasData={servers.length > 0}
+        />
+      </div>
     </div>
   );
 }

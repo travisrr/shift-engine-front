@@ -61,9 +61,9 @@ export default function Dashboard({
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] lg:ml-60">
-      <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
         {/* ── Header with Date Picker ── */}
-        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
               Performance Dashboard
@@ -75,13 +75,13 @@ export default function Dashboard({
           </div>
 
           {/* Date Picker */}
-          <div className="flex w-full shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:w-auto">
+          <div className="flex w-full shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:w-auto">
             <CalendarDays className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="w-full border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none sm:w-auto"
+              className="w-full border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none lg:w-auto"
               id="date-picker"
             />
           </div>
@@ -105,7 +105,7 @@ export default function Dashboard({
         {hasData && (
           <>
             {/* ── Top-Level Stats ── */}
-            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
               {/* Top Performer */}
               <div className="rounded-lg border border-slate-200 bg-white px-5 py-4">
                 <div className="mb-3 flex items-center justify-between">
@@ -168,28 +168,28 @@ export default function Dashboard({
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full min-w-[800px] text-left text-[13px] lg:min-w-0">
                   <thead>
                     <tr className="border-b border-slate-100">
-                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[20%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Server
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Final Score
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Sales/hr
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Tips/hr
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Tip %
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Avg Check
                       </th>
-                      <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Guests/hr
                       </th>
                     </tr>
@@ -201,9 +201,9 @@ export default function Dashboard({
                         className="transition-colors hover:bg-slate-50/80"
                       >
                         {/* Server name */}
-                        <td className="whitespace-nowrap px-5 py-3">
+                        <td className="whitespace-nowrap px-4 py-3 lg:px-5">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
                               {idx + 1}
                             </div>
                             <span className="font-medium text-slate-900">
@@ -213,28 +213,28 @@ export default function Dashboard({
                         </td>
 
                         {/* Score pill */}
-                        <td className="whitespace-nowrap px-5 py-3">
+                        <td className="whitespace-nowrap px-4 py-3 lg:px-5">
                           <span
-                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[12px] font-semibold ${scoreColor(server.score)} ${scoreBorder(server.score)}`}
+                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[12px] font-semibold lg:px-2.5 ${scoreColor(server.score)} ${scoreBorder(server.score)}`}
                           >
                             {server.score}
                           </span>
                         </td>
 
                         {/* Numeric columns */}
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
                           ${server.salesHr.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
                           ${server.tipsHr.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
                           {server.tipPct.toFixed(1)}%
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
                           ${server.avgCheck.toFixed(2)}
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
                           {server.guestsHr.toFixed(1)}
                         </td>
                       </tr>
