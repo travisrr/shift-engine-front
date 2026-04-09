@@ -272,7 +272,7 @@ export default function EditTeamPage() {
       const client = await getSupabase();
       if (!client) {
         // If no database, use mock data
-        const existingNames = new Set(staff.map((s) => s.full_name));
+        const existingNames = new Set(staff.map((s: WaitStaff) => s.full_name));
         const newServers = mockServerNames.filter((name) => !existingNames.has(name));
         setAvailableServers(newServers);
         return;
@@ -298,7 +298,7 @@ export default function EditTeamPage() {
           .eq('upload_id', latestUpload.id);
 
         if (scoresError) throw scoresError;
-        serverNames = scores?.map((s) => s.server_name) || [];
+        serverNames = scores?.map((s: { server_name: string }) => s.server_name) || [];
       }
 
       // If no uploads yet, fall back to mock data
@@ -311,14 +311,14 @@ export default function EditTeamPage() {
         .from('wait_staff')
         .select('full_name');
 
-      const existingNames = new Set(existingStaff?.map((s) => s.full_name) || []);
+      const existingNames = new Set(existingStaff?.map((s: { full_name: string }) => s.full_name) || []);
       const newServers = serverNames.filter((name) => !existingNames.has(name));
 
       setAvailableServers(newServers);
     } catch (err) {
       console.error('Error fetching available servers:', err);
       // Fall back to mock data on error
-      const existingNames = new Set(staff.map((s) => s.full_name));
+      const existingNames = new Set(staff.map((s: WaitStaff) => s.full_name));
       const newServers = mockServerNames.filter((name) => !existingNames.has(name));
       setAvailableServers(newServers);
     } finally {
