@@ -6,7 +6,7 @@ export default function Navbar() {
     <nav className="flex flex-wrap items-center justify-between gap-4 py-5">
       <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-shift-green sm:gap-3 sm:text-2xl">
         <Image 
-          src="/shift-engine-logo-bw-nobg.png" 
+          src="/shift-engine-logo-bw-nobg.webp" 
           alt="Shift-Engine Logo" 
           width={36} 
           height={36} 

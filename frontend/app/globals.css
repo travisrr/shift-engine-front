@@ -99,6 +99,138 @@ body {
 }
 
 /* ═══════════════════════════════════════════
+   Whispy Background – Motion & Atmosphere
+   ═══════════════════════════════════════════ */
+
+/* Floating particles drift randomly */
+@keyframes particle-drift {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.1;
+  }
+  25% {
+    transform: translate(30px, -20px);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(-20px, -40px);
+    opacity: 0.15;
+  }
+  75% {
+    transform: translate(40px, 10px);
+    opacity: 0.2;
+  }
+}
+
+.whispy-particle {
+  animation: particle-drift linear infinite;
+}
+
+/* Speed lines streak across with motion blur effect */
+@keyframes speed-streak {
+  0% {
+    transform: translateX(-200px) scaleX(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: var(--line-opacity, 0.15);
+  }
+  80% {
+    opacity: var(--line-opacity, 0.15);
+  }
+  100% {
+    transform: translateX(300px) scaleX(1.2);
+    opacity: 0;
+  }
+}
+
+.whispy-speedline {
+  animation: speed-streak ease-in-out infinite;
+}
+
+/* Steam wisps rise and fade like kitchen steam */
+@keyframes wisp-rise {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-40px) scale(1) translateX(10px);
+    opacity: 0.15;
+  }
+  85% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(-80px) scale(1.1) translateX(-5px);
+    opacity: 0;
+  }
+}
+
+@keyframes wisp-path-float {
+  0%, 100% {
+    d: path("M20 70 Q 30 40, 25 20 T 30 5");
+  }
+  50% {
+    d: path("M20 70 Q 25 35, 30 20 T 25 5");
+  }
+}
+
+.whispy-wisp {
+  animation: wisp-rise linear infinite;
+}
+
+.wisp-path-1 {
+  animation: wisp-path-float 8s ease-in-out infinite;
+}
+
+.wisp-path-2 {
+  animation: wisp-path-float 10s ease-in-out infinite 1s;
+}
+
+.wisp-path-3 {
+  animation: wisp-path-float 7s ease-in-out infinite 2s;
+}
+
+/* Gradient orbs pulse softly */
+@keyframes orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.05;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.08;
+  }
+}
+
+.whispy-orb {
+  animation: orb-pulse 12s ease-in-out infinite;
+}
+
+/* Fast-paced subtle motion blur overlay for restaurant energy */
+@keyframes motion-blur-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.03;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.whispy-motion-blur {
+  animation: motion-blur-sweep 8s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
    Landing Page – KPI Badge Pseudo-Elements
    (Complex ::before/::after positioning that
     doesn't map cleanly to utility classes)

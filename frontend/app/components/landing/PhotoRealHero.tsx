@@ -191,7 +191,7 @@ export default function PhotoRealHero() {
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.2)]">
             {/* Main Hero Image - NYC Restaurant Dining Room */}
             <Image
-              src="/hero-nyc-dining-iphone.png"
+              src="/hero-nyc-dining-iphone.webp"
               alt="Busy NYC restaurant dining room with three servers tracked by performance metrics"
               fill
               className="object-cover"
