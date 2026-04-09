@@ -141,7 +141,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 </button>
                 {!collapsed && isExpanded && (
                   <div className="ml-4 space-y-0.5 border-l border-gray-200 pl-2">
-                    {item.children.map((child) => {
+                    {item.children?.map((child) => {
                       const ChildIcon = child.icon;
                       const childActive = isActive(child.href);
                       return (
