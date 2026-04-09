@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import Navbar from "./components/landing/Navbar";
 import PhotoRealHero from "./components/landing/PhotoRealHero";
 import PhotoSection, { PhotoAccent } from "./components/landing/PhotoSection";
 import WhispyBackground from "./components/landing/WhispyBackground";
@@ -130,30 +131,7 @@ export default function LandingPage() {
   return (
     <div className="bg-[#f7f6f3] text-shift-text-dark">
       {/* Navbar */}
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-3 text-lg font-semibold tracking-tight"
-        >
-          <Image
-            src="/shift-engine-logo-bw-nobg.webp"
-            alt="Shift Engine logo mark"
-            width={38}
-            height={38}
-            className="h-9 w-9 object-contain"
-            priority
-          />
-          <span>Shift Engine</span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="rounded-lg border border-shift-border bg-white px-4 py-2 text-sm font-medium text-shift-text-dark transition hover:bg-neutral-50"
-          >
-            Log in
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero with Digital Pointillism background - tech sophistication */}
       <div className="relative overflow-hidden">

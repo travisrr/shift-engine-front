@@ -20,7 +20,7 @@ export default function Pricing() {
       id="pricing"
       className="border-t border-shift-border bg-shift-offwhite py-16 text-center sm:py-20 md:py-24"
     >
-      <div className="mx-auto max-w-[1200px] px-5">
+      <div className="mx-auto max-w-6xl px-5">
         {/* Header */}
         <div className="mb-12 text-center">
           <p className="mb-3 text-xs font-semibold tracking-[0.16em] text-shift-green-accent uppercase">

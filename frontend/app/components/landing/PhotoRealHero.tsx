@@ -83,47 +83,21 @@ function MetricBadge({
 }
 
 function ServerCallout({ server }: { server: ServerMetric }) {
-  // Parse positions for calculations
-  const dotTop = parseFloat(server.position.top);
-  const dotLeft = parseFloat(server.position.left);
-  const boxTop = parseFloat(server.calloutPosition.top);
-  const boxLeft = parseFloat(server.calloutPosition.left);
-
-  // Determine which side the callout is on relative to the dot
-  const isBoxToRight = boxLeft > dotLeft;
-  const isBoxBelow = boxTop > dotTop;
-
   return (
     <>
       {/* Pulsing dot at server location */}
       <div
-        className="absolute -translate-x-1/2 -translate-y-1/2"
+        className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
         style={{
           top: server.position.top,
           left: server.position.left,
         }}
       >
         <div className="relative">
-          <div className="h-3 w-3 rounded-full bg-white shadow-lg" />
-          <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-white/60" />
+          <div className="h-3 w-3 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+          <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-white/70" />
         </div>
       </div>
-
-      {/* Dotted line connecting dot to callout */}
-      <svg
-        className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-      >
-        <line
-          x1={`${dotLeft}%`}
-          y1={`${dotTop}%`}
-          x2={`${boxLeft}%`}
-          y2={`${boxTop}%`}
-          stroke="white"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
-          opacity="0.9"
-        />
-      </svg>
 
       {/* Callout box at corner position */}
       <div
@@ -145,6 +119,46 @@ function ServerCallout({ server }: { server: ServerMetric }) {
         </div>
       </div>
     </>
+  );
+}
+
+function ConnectionLines() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 z-[15] h-full w-full overflow-visible">
+      {/* Line from Sarah M. dot to her callout box */}
+      <line
+        x1="22%"
+        y1="40%"
+        x2="6%"
+        y2="6%"
+        stroke="white"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        opacity="0.95"
+      />
+      {/* Line from Jordan K. dot to his callout box */}
+      <line
+        x1="52%"
+        y1="48%"
+        x2="72%"
+        y2="6%"
+        stroke="white"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        opacity="0.95"
+      />
+      {/* Line from Alex R. dot to her callout box */}
+      <line
+        x1="82%"
+        y1="42%"
+        x2="28%"
+        y2="78%"
+        stroke="white"
+        strokeWidth="2"
+        strokeDasharray="5 3"
+        opacity="0.95"
+      />
+    </svg>
   );
 }
 
@@ -199,6 +213,7 @@ export default function PhotoRealHero() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
             {/* Server Metric Callouts */}
+            <ConnectionLines />
             {serverMetrics.map((server) => (
               <ServerCallout key={server.id} server={server} />
             ))}
