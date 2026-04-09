@@ -62,7 +62,7 @@ function parseToastCSV(csvText: string): ServerScore[] {
   const parseResult = Papa.parse<ToastCSVRow>(csvText, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (header) => header.trim(),
+    transformHeader: (header: string) => header.trim(),
   });
 
   if (parseResult.errors.length > 0) {
