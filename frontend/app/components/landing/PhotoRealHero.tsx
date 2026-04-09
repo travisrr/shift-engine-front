@@ -20,8 +20,8 @@ const serverMetrics: ServerMetric[] = [
   {
     id: "server-1",
     name: "Sarah M.",
-    position: { top: "40%", left: "22%" },
-    calloutPosition: { top: "6%", left: "6%" },
+    position: { top: "38%", left: "28%" },
+    calloutPosition: { top: "8%", left: "8%" },
     metrics: [
       { label: "Sales/hr", value: "$127", status: "good" },
       { label: "Tip %", value: "21.5%", status: "good" },
@@ -31,8 +31,8 @@ const serverMetrics: ServerMetric[] = [
   {
     id: "server-2",
     name: "Jordan K.",
-    position: { top: "48%", left: "52%" },
-    calloutPosition: { top: "6%", left: "72%" },
+    position: { top: "55%", left: "54%" },
+    calloutPosition: { top: "8%", left: "72%" },
     metrics: [
       { label: "Sales/hr", value: "$89", status: "warning" },
       { label: "Tip %", value: "12.3%", status: "bad" },
@@ -42,8 +42,8 @@ const serverMetrics: ServerMetric[] = [
   {
     id: "server-3",
     name: "Alex R.",
-    position: { top: "42%", left: "82%" },
-    calloutPosition: { top: "78%", left: "28%" },
+    position: { top: "52%", left: "85%" },
+    calloutPosition: { top: "75%", left: "35%" },
     metrics: [
       { label: "Sales/hr", value: "$142", status: "good" },
       { label: "Tip %", value: "18.2%", status: "good" },
@@ -125,34 +125,34 @@ function ServerCallout({ server }: { server: ServerMetric }) {
 function ConnectionLines() {
   return (
     <svg className="pointer-events-none absolute inset-0 z-[15] h-full w-full overflow-visible">
-      {/* Line from Sarah M. dot to her callout box */}
+      {/* Line from Sarah M. dot (left server) to her callout box (top-left) */}
       <line
-        x1="22%"
-        y1="40%"
-        x2="6%"
-        y2="6%"
+        x1="28%"
+        y1="38%"
+        x2="8%"
+        y2="8%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Jordan K. dot to his callout box */}
+      {/* Line from Jordan K. dot (middle server) to his callout box (top-right) */}
       <line
-        x1="52%"
-        y1="48%"
+        x1="54%"
+        y1="55%"
         x2="72%"
-        y2="6%"
+        y2="8%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
         opacity="0.95"
       />
-      {/* Line from Alex R. dot to her callout box */}
+      {/* Line from Alex R. dot (right server) to her callout box (bottom) */}
       <line
-        x1="82%"
-        y1="42%"
-        x2="28%"
-        y2="78%"
+        x1="85%"
+        y1="52%"
+        x2="35%"
+        y2="75%"
         stroke="white"
         strokeWidth="2"
         strokeDasharray="5 3"
