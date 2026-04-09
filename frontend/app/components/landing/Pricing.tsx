@@ -12,7 +12,7 @@ export default function Pricing() {
   return (
     <section
       id="pricing"
-      className="border-t border-shift-border bg-shift-offwhite py-24 text-center"
+      className="border-t border-shift-border bg-shift-offwhite py-16 text-center sm:py-20 md:py-24"
     >
       <div className="mx-auto max-w-[1200px] px-5">
         {/* Header */}
@@ -26,13 +26,13 @@ export default function Pricing() {
         </div>
 
         {/* Card */}
-        <div className="mx-auto mt-10 max-w-[450px] rounded-xl border-2 border-shift-green bg-white px-10 py-12 shadow-[0_20px_40px_rgba(58,79,57,0.1)] max-md:mx-5">
+        <div className="mx-auto mt-10 max-w-[450px] rounded-xl border-2 border-shift-green bg-white px-6 py-8 shadow-[0_20px_40px_rgba(58,79,57,0.1)] sm:px-8 sm:py-10 md:px-10 md:py-12">
           <h3 className="mb-3 text-2xl font-bold text-shift-green">
             All Access Plan
           </h3>
 
           <div className="mb-8 text-shift-text-dark">
-            <span className="text-6xl font-extrabold">$75</span>
+            <span className="text-5xl font-extrabold sm:text-6xl">$75</span>
             <span className="text-xl font-normal text-shift-text-light">
               /mo
             </span>

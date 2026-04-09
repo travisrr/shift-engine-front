@@ -60,10 +60,10 @@ export default function Dashboard({
       : null;
 
   return (
-    <div className="ml-60 min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1120px] px-8 py-8">
+    <div className="min-h-screen bg-slate-50/50 lg:ml-60">
+      <div className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* ── Header with Date Picker ── */}
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
           <div>
             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
               Performance Dashboard
@@ -75,13 +75,13 @@ export default function Dashboard({
           </div>
 
           {/* Date Picker */}
-          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="flex w-full shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:w-auto">
             <CalendarDays className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none"
+              className="w-full border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none sm:w-auto"
               id="date-picker"
             />
           </div>

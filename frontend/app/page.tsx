@@ -9,7 +9,7 @@ export default function LandingPage() {
   return (
     <div className="bg-shift-offwhite text-shift-text-dark leading-relaxed">
       {/* Nav + Hero share same container */}
-      <div className="mx-auto max-w-[1200px] px-5">
+      <div className="mx-auto max-w-[1200px] px-4 sm:px-5">
         <Navbar />
         <HeroSection />
       </div>

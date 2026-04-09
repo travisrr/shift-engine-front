@@ -55,7 +55,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
   return (
     <aside
       className={`
-        fixed left-0 top-0 z-40 flex h-screen flex-col
+        fixed left-0 top-0 z-40 hidden h-screen flex-col lg:flex
         border-r border-slate-200 bg-white
         transition-all duration-200
         ${collapsed ? 'w-16' : 'w-60'}
