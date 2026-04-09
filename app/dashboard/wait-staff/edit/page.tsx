@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import Sidebar from '@/app/components/Sidebar';
+
+// Lazy Supabase client to avoid build-time errors
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let supabaseClient: any = null;
+async function getSupabase() {
+  if (!supabaseClient) {
+    const { supabase } = await import('@/lib/supabase');
+    supabaseClient = supabase;
+  }
+  return supabaseClient;
+}
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -23,6 +33,10 @@ interface FormData {
   hire_date: string;
   status: 'Active' | 'Inactive';
 }
+
+/* ─────────────────── Config ─────────────────── */
+
+export const dynamic = 'force-dynamic';
 
 /* ─────────────────── Components ─────────────────── */
 
@@ -50,7 +64,12 @@ export default function EditTeamPage() {
   async function fetchStaff() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const client = await getSupabase();
+      if (!client) {
+        setStaff([]);
+        return;
+      }
+      const { data, error } = await client
         .from('wait_staff')
         .select('*')
         .order('created_at', { ascending: false });
@@ -122,7 +141,10 @@ export default function EditTeamPage() {
         throw new Error('Hourly rate must be a valid number');
       }
 
-      const { error } = await supabase.from('wait_staff').insert({
+      const client = await getSupabase();
+      if (!client) throw new Error('Database not available');
+
+      const { error } = await client.from('wait_staff').insert({
         full_name: formData.full_name.trim(),
         hourly_rate: hourlyRate,
         hire_date: formData.hire_date,
@@ -158,7 +180,10 @@ export default function EditTeamPage() {
         throw new Error('Hourly rate must be a valid number');
       }
 
-      const { error } = await supabase
+      const client = await getSupabase();
+      if (!client) throw new Error('Database not available');
+
+      const { error } = await client
         .from('wait_staff')
         .update({
           full_name: formData.full_name.trim(),
@@ -186,7 +211,10 @@ export default function EditTeamPage() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      const client = await getSupabase();
+      if (!client) throw new Error('Database not available');
+
+      const { error } = await client
         .from('wait_staff')
         .delete()
         .eq('id', selectedStaff.id);
