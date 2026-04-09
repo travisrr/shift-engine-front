@@ -7,12 +7,14 @@ import Sidebar from '@/app/components/Sidebar';
 // Lazy Supabase client to avoid build-time errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let supabaseClient: any = null;
+let supabaseError: string | null = null;
 async function getSupabase() {
   if (!supabaseClient) {
-    const { supabase } = await import('@/lib/supabase');
+    const { supabase, getSupabaseError } = await import('@/lib/supabase');
     supabaseClient = supabase;
+    supabaseError = getSupabaseError?.() || null;
   }
-  return supabaseClient;
+  return { client: supabaseClient, error: supabaseError };
 }
 
 /* ─────────────────── Types ─────────────────── */
@@ -70,7 +72,7 @@ export default function EditTeamPage() {
   async function fetchStaff() {
     try {
       setLoading(true);
-      const client = await getSupabase();
+      const { client } = await getSupabase();
       if (!client) {
         setStaff([]);
         setLoading(false);
@@ -158,8 +160,8 @@ export default function EditTeamPage() {
         throw new Error('Hourly rate must be a valid number');
       }
 
-      const client = await getSupabase();
-      if (!client) throw new Error('Database not available');
+      const { client, error: supaError } = await getSupabase();
+      if (!client) throw new Error(supaError || 'Database not available');
 
       const { error } = await client.from('wait_staff').insert({
         full_name: formData.full_name.trim(),
@@ -197,8 +199,8 @@ export default function EditTeamPage() {
         throw new Error('Hourly rate must be a valid number');
       }
 
-      const client = await getSupabase();
-      if (!client) throw new Error('Database not available');
+      const { client, error: supaError } = await getSupabase();
+      if (!client) throw new Error(supaError || 'Database not available');
 
       const { error } = await client
         .from('wait_staff')
@@ -228,8 +230,8 @@ export default function EditTeamPage() {
     setIsSubmitting(true);
 
     try {
-      const client = await getSupabase();
-      if (!client) throw new Error('Database not available');
+      const { client, error: supaError } = await getSupabase();
+      if (!client) throw new Error(supaError || 'Database not available');
 
       const { error } = await client
         .from('wait_staff')
@@ -290,9 +292,12 @@ export default function EditTeamPage() {
     setSelectedServers(new Set());
 
     try {
-      const client = await getSupabase();
+      const { client, error: supaError } = await getSupabase();
       if (!client) {
-        // If no database, use mock data
+        // If no database, use mock data but show error in console
+        if (supaError) {
+          console.error('[Import] Database not configured:', supaError);
+        }
         const existingNames = new Set(staff.map((s: WaitStaff) => s.full_name));
         const newServers = mockServerNames.filter((name) => !existingNames.has(name));
         setAvailableServers(newServers);
@@ -383,14 +388,11 @@ export default function EditTeamPage() {
     setImportSuccess(null);
 
     try {
-      const client = await getSupabase();
-      if (!client) throw new Error('Database not available');
-
-      // Check if Supabase is actually configured (not just placeholder values)
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+      const { client, error: supaError } = await getSupabase();
+      if (!client) {
         throw new Error(
-          'Database not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables in your Vercel project settings.'
+          supaError ||
+          'Database not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables in your Vercel project settings, then redeploy.'
         );
       }
 
