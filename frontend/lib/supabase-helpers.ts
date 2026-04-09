@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, getSupabaseClient } from './supabase'
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -14,11 +14,19 @@ export interface ServerScore {
 
 /* ─────────────────── Helpers ─────────────────── */
 
+function checkSupabaseConfigured() {
+  if (!getSupabaseClient()) {
+    throw new Error('Database not configured. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.')
+  }
+}
+
 /**
  * Save (or overwrite) an upload for a given date.
  * Upserts the `uploads` row, deletes old scores, then batch-inserts new ones.
  */
 export async function saveUpload(date: string, servers: ServerScore[]) {
+  checkSupabaseConfigured()
+
   // Upsert the upload row (unique on date)
   const { data: upload, error: uploadError } = await supabase
     .from('uploads')
@@ -57,6 +65,8 @@ export async function saveUpload(date: string, servers: ServerScore[]) {
  * Returns null if no upload exists for that date.
  */
 export async function getUploadByDate(date: string) {
+  checkSupabaseConfigured()
+
   const { data: upload, error } = await supabase
     .from('uploads')
     .select('id, date, created_at')
@@ -82,6 +92,8 @@ export async function getUploadByDate(date: string) {
  * Useful for highlighting dates in the date picker.
  */
 export async function getAvailableDates(): Promise<string[]> {
+  checkSupabaseConfigured()
+
   const { data, error } = await supabase
     .from('uploads')
     .select('date')
