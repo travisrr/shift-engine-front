@@ -3,18 +3,36 @@
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   Star,
   Settings,
   ChevronDown,
   Cog,
   Upload,
+  ChevronRight,
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, active: true },
-  { label: 'Wait Staff', icon: Users, active: false },
-  { label: 'Reviews', icon: Star, active: false },
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
+  href?: string;
+  active?: boolean;
+  children?: { label: string; href: string; icon: React.ElementType }[];
+}
+
+const navItems: NavItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  {
+    label: 'Wait Staff',
+    icon: Users,
+    children: [
+      { label: 'Edit Team', href: '/dashboard/wait-staff/edit', icon: UserCog },
+    ],
+  },
+  { label: 'Reviews', icon: Star, href: '/dashboard/reviews' },
 ];
 
 interface SidebarProps {
@@ -24,7 +42,9 @@ interface SidebarProps {
 export default function Sidebar({ onFileUpload }: SidebarProps) {
   const [collapsed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['Wait Staff']);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pathname = usePathname();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -52,20 +72,32 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
     [onFileUpload],
   );
 
+  const toggleSection = (label: string) => {
+    setExpandedSections((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  };
+
+  const isActive = (href?: string) => href && pathname === href;
+  const isSectionActive = (item: NavItem) => {
+    if (!item.children) return false;
+    return item.children.some((child) => pathname === child.href);
+  };
+
   return (
     <aside
       className={`
         fixed left-0 top-0 z-40 hidden h-screen flex-col lg:flex
-        border-r border-slate-200 bg-white
+        border-r border-gray-200 bg-white
         transition-all duration-200
         ${collapsed ? 'w-16' : 'w-60'}
       `}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-slate-200 px-5">
-        <Cog className="h-5 w-5 text-slate-900" strokeWidth={2} />
+      <div className="flex h-14 items-center gap-2.5 border-b border-gray-200 px-5">
+        <Cog className="h-5 w-5 text-black" strokeWidth={2} />
         {!collapsed && (
-          <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+          <span className="text-[15px] font-semibold tracking-tight text-black">
             Shift-Engine
           </span>
         )}
@@ -75,27 +107,91 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       <nav className="space-y-0.5 px-3 pt-4">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const hasChildren = item.children && item.children.length > 0;
+          const isExpanded = expandedSections.includes(item.label);
+          const sectionActive = isSectionActive(item);
+
+          if (hasChildren) {
+            return (
+              <div key={item.label} className="space-y-0.5">
+                <button
+                  onClick={() => toggleSection(item.label)}
+                  className={`
+                    group flex w-full items-center justify-between rounded-md px-2.5 py-[7px]
+                    text-[13px] font-medium transition-colors
+                    ${sectionActive ? 'bg-zinc-100 text-black' : 'text-gray-600 hover:bg-zinc-50 hover:text-gray-900'}
+                  `}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className={`h-4 w-4 shrink-0 ${
+                        sectionActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-600'
+                      }`}
+                      strokeWidth={sectionActive ? 2 : 1.75}
+                    />
+                    {!collapsed && item.label}
+                  </div>
+                  {!collapsed && (
+                    <ChevronRight
+                      className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${
+                        isExpanded ? 'rotate-90' : ''
+                      }`}
+                    />
+                  )}
+                </button>
+                {!collapsed && isExpanded && (
+                  <div className="ml-4 space-y-0.5 border-l border-gray-200 pl-2">
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      const childActive = isActive(child.href);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`
+                            group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px]
+                            text-[13px] font-medium transition-colors
+                            ${childActive ? 'bg-zinc-100 text-black' : 'text-gray-500 hover:bg-zinc-50 hover:text-gray-700'}
+                          `}
+                        >
+                          <ChildIcon
+                            className={`h-4 w-4 shrink-0 ${
+                              childActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-500'
+                            }`}
+                            strokeWidth={childActive ? 2 : 1.75}
+                          />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
-            <button
+            <Link
               key={item.label}
+              href={item.href || '#'}
               className={`
                 group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px]
                 text-[13px] font-medium transition-colors
                 ${
-                  item.active
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  isActive(item.href)
+                    ? 'bg-zinc-100 text-black'
+                    : 'text-gray-600 hover:bg-zinc-50 hover:text-gray-900'
                 }
               `}
             >
               <Icon
                 className={`h-4 w-4 shrink-0 ${
-                  item.active ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'
+                  isActive(item.href) ? 'text-black' : 'text-gray-400 group-hover:text-gray-600'
                 }`}
-                strokeWidth={item.active ? 2 : 1.75}
+                strokeWidth={isActive(item.href) ? 2 : 1.75}
               />
               {!collapsed && item.label}
-            </button>
+            </Link>
           );
         })}
       </nav>
@@ -115,7 +211,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
               ${
                 dragActive
                   ? 'border-indigo-400 bg-indigo-50/60'
-                  : 'border-slate-300 bg-slate-50/50 hover:border-slate-400 hover:bg-slate-100/60'
+                  : 'border-gray-300 bg-zinc-50/50 hover:border-gray-400 hover:bg-zinc-100/60'
               }
             `}
             role="button"
@@ -138,21 +234,21 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 className={`
                   flex h-8 w-8 shrink-0 items-center justify-center rounded-md
                   transition-colors duration-150
-                  ${dragActive ? 'bg-indigo-100' : 'bg-slate-100 group-hover:bg-slate-200/70'}
+                  ${dragActive ? 'bg-indigo-100' : 'bg-zinc-100 group-hover:bg-zinc-200/70'}
                 `}
               >
                 <Upload
                   className={`h-3.5 w-3.5 transition-colors duration-150 ${
-                    dragActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-500'
+                    dragActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
                   }`}
                   strokeWidth={2}
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium text-slate-600">
+                <p className="text-[12px] font-medium text-gray-600">
                   Drop CSV
                 </p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-gray-400">
                   or click to browse
                 </p>
               </div>
@@ -165,28 +261,28 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       <div className="flex-1" />
 
       {/* User profile section */}
-      <div className="border-t border-slate-200 px-3 py-3">
-        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors hover:bg-slate-50">
+      <div className="border-t border-gray-200 px-3 py-3">
+        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors hover:bg-zinc-50">
           {/* Avatar */}
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold text-white">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
             M
           </div>
           {!collapsed && (
             <div className="flex flex-1 items-center justify-between">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-slate-900">
+                <p className="truncate text-[13px] font-medium text-black">
                   Manager
                 </p>
-                <p className="truncate text-[11px] text-slate-400">
+                <p className="truncate text-[11px] text-gray-400">
                   admin@shiftengine.io
                 </p>
               </div>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             </div>
           )}
         </button>
-        <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700">
-          <Settings className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
+        <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-gray-500 transition-colors hover:bg-zinc-50 hover:text-gray-700">
+          <Settings className="h-4 w-4 text-gray-400" strokeWidth={1.75} />
           {!collapsed && 'Settings'}
         </button>
       </div>
