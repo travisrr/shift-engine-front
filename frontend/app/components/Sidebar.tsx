@@ -94,13 +94,12 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       `}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-gray-200 px-5">
-        <Cog className="h-5 w-5 text-black" strokeWidth={2} />
-        {!collapsed && (
-          <span className="text-[15px] font-semibold tracking-tight text-black">
-            Shift-Engine
-          </span>
-        )}
+      <div className="flex h-14 items-center gap-2.5 border-b border-gray-200 px-4">
+        <img
+          src="/shift-engine-logo-bw-nobg.webp"
+          alt="Shift Engine"
+          className="h-7 w-auto"
+        />
       </div>
 
       {/* Navigation */}
