@@ -17,7 +17,6 @@ function todayISO() {
 const mockServers: ServerData[] = [
   { name: 'Addie Stubbe', score: 78, salesHr: 151.7, tipsHr: 29.1, tipPct: 19.2, avgCheck: 53.4, guestsHr: 5.4 },
   { name: 'Alec Ramsey', score: 76, salesHr: 116.9, tipsHr: 21.9, tipPct: 18.8, avgCheck: 68.2, guestsHr: 3.0 },
-  { name: 'Caleigh Graves', score: 92, salesHr: 776.2, tipsHr: 163.2, tipPct: 21.0, avgCheck: 45.6, guestsHr: 26.5 },
   { name: 'Chloe Colaianni', score: 95, salesHr: 201.0, tipsHr: 36.3, tipPct: 18.1, avgCheck: 63.0, guestsHr: 5.7 },
   { name: 'Dean Polizos', score: 89, salesHr: 178.7, tipsHr: 30.9, tipPct: 17.3, avgCheck: 68.7, guestsHr: 4.9 },
   { name: 'Eric Fowler', score: 89, salesHr: 166.5, tipsHr: 30.9, tipPct: 18.5, avgCheck: 64.9, guestsHr: 4.7 },
@@ -31,6 +30,10 @@ const mockServers: ServerData[] = [
   { name: 'Rachel Brunet', score: 91, salesHr: 163.8, tipsHr: 31.5, tipPct: 19.2, avgCheck: 54.1, guestsHr: 5.4 },
   { name: 'Thomas Malone', score: 79, salesHr: 181.0, tipsHr: 35.3, tipPct: 19.5, avgCheck: 65.2, guestsHr: 5.2 },
   { name: 'Ty Buckley', score: 89, salesHr: 160.1, tipsHr: 28.7, tipPct: 17.9, avgCheck: 69.9, guestsHr: 4.2 },
+];
+
+const mockBartenders: ServerData[] = [
+  { name: 'Caleigh Graves', score: 92, salesHr: 776.2, tipsHr: 163.2, tipPct: 21.0, avgCheck: 45.6, guestsHr: 26.5 },
 ];
 
 /* ─────────────────── CSV Parsing Helpers ─────────────────── */
@@ -196,18 +199,17 @@ export default function DashboardPage() {
         
         setServers(serverScoreToServerData(serverScores));
         setBartenders(serverScoreToServerData(bartenderScores));
-      } else {
-        console.log('[Dashboard] No data found, using mock data');
-        // Fallback to mock data when no CSV has been uploaded
-        // All mock data defaults to Servers
-        setServers(mockServers);
-        setBartenders([]);
-      }
+        } else {
+          console.log('[Dashboard] No data found, using mock data');
+          // Fallback to mock data when no CSV has been uploaded
+          setServers(mockServers);
+          setBartenders(mockBartenders);
+        }
     } catch (err) {
       console.error('[Dashboard] Error loading data:', err);
       // Fallback to mock data on error
       setServers(mockServers);
-      setBartenders([]);
+      setBartenders(mockBartenders);
     } finally {
       setIsLoading(false);
     }
