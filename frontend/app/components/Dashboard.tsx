@@ -8,7 +8,34 @@ import {
   ArrowDownRight,
   TrendingUp,
   CalendarDays,
+  Info,
 } from 'lucide-react';
+
+/* ─────────────────── Tooltip Header Component ─────────────────── */
+
+interface TooltipHeaderProps {
+  label: string;
+  tooltip: string;
+  align?: 'left' | 'right';
+}
+
+function TooltipHeader({ label, tooltip, align = 'left' }: TooltipHeaderProps) {
+  return (
+    <div className={`group relative inline-flex items-center gap-1.5 ${align === 'right' ? 'justify-end' : ''}`}>
+      <span>{label}</span>
+      <Info
+        className="h-3 w-3 cursor-help text-slate-300 transition-colors group-hover:text-slate-400"
+        strokeWidth={1.5}
+      />
+      {/* Tooltip */}
+      <div className={`pointer-events-none absolute bottom-full mb-2 w-48 rounded-lg bg-slate-800 px-3 py-2 text-[11px] font-normal normal-case tracking-normal text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 ${align === 'right' ? 'right-0' : 'left-0'} z-50`}>
+        {tooltip}
+        {/* Arrow */}
+        <div className={`absolute top-full ${align === 'right' ? 'right-3' : 'left-3'} -mt-1 border-4 border-transparent border-t-slate-800`} />
+      </div>
+    </div>
+  );
+}
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -24,6 +51,7 @@ export interface ServerData {
 
 interface DashboardProps {
   servers: ServerData[];
+  bartenders?: ServerData[];
   selectedDate: string;
   onDateChange: (date: string) => void;
   hasData: boolean;
@@ -49,6 +77,7 @@ function scoreBorder(score: number) {
 
 export default function Dashboard({
   servers,
+  bartenders = [],
   selectedDate,
   onDateChange,
   hasData,
@@ -58,6 +87,8 @@ export default function Dashboard({
     servers.length > 0
       ? servers.reduce((max, s) => (s.avgCheck > max.avgCheck ? s : max), servers[0])
       : null;
+  
+  const topBartender = bartenders.length > 0 ? bartenders[0] : null;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] lg:ml-60">
@@ -156,7 +187,7 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* ── Scorecard Table ── */}
+            {/* ── Server Scorecard Table ── */}
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div className="border-b border-slate-200 px-5 py-3.5">
                 <h2 className="text-[14px] font-semibold text-slate-900">
@@ -175,22 +206,45 @@ export default function Dashboard({
                         Server
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Final Score
+                        <TooltipHeader
+                          label="Final Score"
+                          tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
+                        />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Sales/hr
+                        <TooltipHeader
+                          label="Sales/hr"
+                          tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
+                          align="right"
+                        />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Tips/hr
+                        <TooltipHeader
+                          label="Tips/hr"
+                          tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
+                          align="right"
+                        />
                       </th>
                       <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Tip %
+                        <TooltipHeader
+                          label="Tip %"
+                          tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
+                          align="right"
+                        />
                       </th>
                       <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Avg Check
+                        <TooltipHeader
+                          label="Avg Check"
+                          tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
+                          align="right"
+                        />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        Guests/hr
+                        <TooltipHeader
+                          label="Guests/hr"
+                          tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
+                          align="right"
+                        />
                       </th>
                     </tr>
                   </thead>
@@ -243,6 +297,119 @@ export default function Dashboard({
                 </table>
               </div>
             </div>
+
+            {/* ── Bar Tender Scorecard Table ── */}
+            {bartenders.length > 0 && (
+              <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-5 py-3.5">
+                  <h2 className="text-[14px] font-semibold text-slate-900">
+                    Bar Tender Scorecard
+                  </h2>
+                  <p className="mt-0.5 text-[12px] text-slate-400">
+                    Ranked by composite performance score
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-left text-[13px] lg:min-w-0">
+                    <thead>
+                      <tr className="border-b border-slate-100">
+                        <th className="w-[20%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          Bar Tender
+                        </th>
+                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Final Score"
+                            tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
+                          />
+                        </th>
+                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Sales/hr"
+                            tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
+                            align="right"
+                          />
+                        </th>
+                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Tips/hr"
+                            tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
+                            align="right"
+                          />
+                        </th>
+                        <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Tip %"
+                            tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
+                            align="right"
+                          />
+                        </th>
+                        <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Avg Check"
+                            tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
+                            align="right"
+                          />
+                        </th>
+                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                          <TooltipHeader
+                            label="Guests/hr"
+                            tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
+                            align="right"
+                          />
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {bartenders.map((bartender, idx) => (
+                        <tr
+                          key={bartender.name}
+                          className="transition-colors hover:bg-slate-50/80"
+                        >
+                          {/* Bar Tender name */}
+                          <td className="whitespace-nowrap px-4 py-3 lg:px-5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500">
+                                {idx + 1}
+                              </div>
+                              <span className="font-medium text-slate-900">
+                                {bartender.name}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Score pill */}
+                          <td className="whitespace-nowrap px-4 py-3 lg:px-5">
+                            <span
+                              className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[12px] font-semibold lg:px-2.5 ${scoreColor(bartender.score)} ${scoreBorder(bartender.score)}`}
+                            >
+                              {bartender.score}
+                            </span>
+                          </td>
+
+                          {/* Numeric columns */}
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
+                            ${bartender.salesHr.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
+                            ${bartender.tipsHr.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
+                            {bartender.tipPct.toFixed(1)}%
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
+                            ${bartender.avgCheck.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 lg:px-5">
+                            {bartender.guestsHr.toFixed(1)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
