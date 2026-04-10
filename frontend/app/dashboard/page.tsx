@@ -15,21 +15,21 @@ function todayISO() {
 /* ─────────────────── Mock Data (shown when no CSV uploaded) ─────────────────── */
 
 const mockServers: ServerData[] = [
-  { name: 'Addie Stubbe', score: 78, salesHr: 151.7, tipsHr: 29.1, tipPct: 19.2, avgCheck: 53.4, guestsHr: 5.4 },
-  { name: 'Alec Ramsey', score: 76, salesHr: 116.9, tipsHr: 21.9, tipPct: 18.8, avgCheck: 68.2, guestsHr: 3.0 },
   { name: 'Chloe Colaianni', score: 95, salesHr: 201.0, tipsHr: 36.3, tipPct: 18.1, avgCheck: 63.0, guestsHr: 5.7 },
+  { name: 'Rachel Brunet', score: 91, salesHr: 163.8, tipsHr: 31.5, tipPct: 19.2, avgCheck: 54.1, guestsHr: 5.4 },
+  { name: 'Karen Mason', score: 90, salesHr: 152.0, tipsHr: 28.3, tipPct: 18.6, avgCheck: 66.0, guestsHr: 4.5 },
   { name: 'Dean Polizos', score: 89, salesHr: 178.7, tipsHr: 30.9, tipPct: 17.3, avgCheck: 68.7, guestsHr: 4.9 },
   { name: 'Eric Fowler', score: 89, salesHr: 166.5, tipsHr: 30.9, tipPct: 18.5, avgCheck: 64.9, guestsHr: 4.7 },
-  { name: 'Giselle San Filippo', score: 86, salesHr: 199.4, tipsHr: 27.5, tipPct: 13.8, avgCheck: 64.5, guestsHr: 5.7 },
-  { name: 'Karen Mason', score: 90, salesHr: 152.0, tipsHr: 28.3, tipPct: 18.6, avgCheck: 66.0, guestsHr: 4.5 },
-  { name: 'Lauren Claxton', score: 80, salesHr: 151.7, tipsHr: 33.1, tipPct: 21.8, avgCheck: 71.3, guestsHr: 4.1 },
+  { name: 'Ty Buckley', score: 89, salesHr: 160.1, tipsHr: 28.7, tipPct: 17.9, avgCheck: 69.9, guestsHr: 4.2 },
   { name: 'Madison Lawrence', score: 88, salesHr: 182.7, tipsHr: 32.3, tipPct: 17.7, avgCheck: 65.3, guestsHr: 5.6 },
   { name: 'Meredith Johnson', score: 87, salesHr: 163.5, tipsHr: 31.7, tipPct: 19.4, avgCheck: 51.2, guestsHr: 5.6 },
+  { name: 'Giselle San Filippo', score: 86, salesHr: 199.4, tipsHr: 27.5, tipPct: 13.8, avgCheck: 64.5, guestsHr: 5.7 },
   { name: 'Morgan Sparkman', score: 86, salesHr: 168.1, tipsHr: 30.9, tipPct: 18.4, avgCheck: 49.1, guestsHr: 5.4 },
+  { name: 'Lauren Claxton', score: 80, salesHr: 151.7, tipsHr: 33.1, tipPct: 21.8, avgCheck: 71.3, guestsHr: 4.1 },
   { name: 'Paige Anderson', score: 81, salesHr: 145.5, tipsHr: 29.1, tipPct: 20.0, avgCheck: 55.2, guestsHr: 4.8 },
-  { name: 'Rachel Brunet', score: 91, salesHr: 163.8, tipsHr: 31.5, tipPct: 19.2, avgCheck: 54.1, guestsHr: 5.4 },
   { name: 'Thomas Malone', score: 79, salesHr: 181.0, tipsHr: 35.3, tipPct: 19.5, avgCheck: 65.2, guestsHr: 5.2 },
-  { name: 'Ty Buckley', score: 89, salesHr: 160.1, tipsHr: 28.7, tipPct: 17.9, avgCheck: 69.9, guestsHr: 4.2 },
+  { name: 'Addie Stubbe', score: 78, salesHr: 151.7, tipsHr: 29.1, tipPct: 19.2, avgCheck: 53.4, guestsHr: 5.4 },
+  { name: 'Alec Ramsey', score: 76, salesHr: 116.9, tipsHr: 21.9, tipPct: 18.8, avgCheck: 68.2, guestsHr: 3.0 },
 ];
 
 const mockBartenders: ServerData[] = [
