@@ -67,6 +67,7 @@ export default function EditTeamPage() {
   const [isLoadingServers, setIsLoadingServers] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   // Fetch staff data on mount
   useEffect(() => {
@@ -142,6 +143,7 @@ export default function EditTeamPage() {
     setIsDeleteModalOpen(false);
     setSelectedStaff(null);
     setFormError(null);
+    setArchiveError(null);
   }
 
   function handleInputChange(
@@ -236,22 +238,32 @@ export default function EditTeamPage() {
     if (!selectedStaff) return;
 
     setIsSubmitting(true);
+    setArchiveError(null);
 
     try {
       const { client, error: supaError } = await getSupabase();
       if (!client) throw new Error(supaError || 'Database not available');
 
-      const { error } = await client
+      const { data, error } = await client
         .from('wait_staff')
         .update({ status: 'Inactive' })
-        .eq('id', selectedStaff.id);
+        .eq('id', selectedStaff.id)
+        .select();
 
       if (error) throw error;
 
+      // Check if any row was actually updated
+      if (!data || data.length === 0) {
+        throw new Error('No employee found with this ID. The employee may have been deleted or the ID has changed.');
+      }
+
       await fetchStaff();
+      setArchiveError(null);
       closeModals();
-    } catch (err) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to archive staff member';
       console.error('Error archiving staff member:', err);
+      setArchiveError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -825,6 +837,12 @@ export default function EditTeamPage() {
                   </h2>
                 </div>
               </div>
+
+              {archiveError && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
+                  {archiveError}
+                </div>
+              )}
 
               <p className="mb-6 text-[13px] leading-relaxed text-gray-600">
                 Are you sure you want to archive{' '}
