@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS wait_staff (
   id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   full_name    TEXT NOT NULL,
+  job_title    TEXT DEFAULT 'Server' CHECK (job_title IN ('Server', 'Bar Tender')),
   hourly_rate  NUMERIC(10,2) DEFAULT 2.13,
   hire_date    DATE NOT NULL,
   status       TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),

@@ -24,6 +24,7 @@ export interface ServerData {
 
 interface DashboardProps {
   servers: ServerData[];
+  bartenders?: ServerData[];
   selectedDate: string;
   onDateChange: (date: string) => void;
   hasData: boolean;
@@ -49,6 +50,7 @@ function scoreBorder(score: number) {
 
 export default function Dashboard({
   servers,
+  bartenders = [],
   selectedDate,
   onDateChange,
   hasData,
@@ -58,6 +60,8 @@ export default function Dashboard({
     servers.length > 0
       ? servers.reduce((max, s) => (s.avgCheck > max.avgCheck ? s : max), servers[0])
       : null;
+  
+  const topBartender = bartenders.length > 0 ? bartenders[0] : null;
 
   return (
     <div className="ml-60 min-h-screen bg-gray-50/60">
@@ -156,7 +160,7 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* ── Scorecard Table ── */}
+            {/* ── Server Scorecard Table ── */}
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-200 px-5 py-3.5">
                 <h2 className="text-[14px] font-semibold text-gray-900">
@@ -243,6 +247,96 @@ export default function Dashboard({
                 </table>
               </div>
             </div>
+
+            {/* ── Bar Tender Scorecard Table ── */}
+            {bartenders.length > 0 && (
+              <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div className="border-b border-gray-200 px-5 py-3.5">
+                  <h2 className="text-[14px] font-semibold text-gray-900">
+                    Bar Tender Scorecard
+                  </h2>
+                  <p className="mt-0.5 text-[12px] text-gray-400">
+                    Ranked by composite performance score
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-[13px]">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Bar Tender
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Final Score
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Sales/hr
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Tips/hr
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Tip %
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Avg Check
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Guests/hr
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {bartenders.map((bartender, idx) => (
+                        <tr
+                          key={bartender.name}
+                          className="transition-colors hover:bg-gray-50/80"
+                        >
+                          {/* Bar Tender name */}
+                          <td className="whitespace-nowrap px-5 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-500">
+                                {idx + 1}
+                              </div>
+                              <span className="font-medium text-gray-900">
+                                {bartender.name}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Score pill */}
+                          <td className="whitespace-nowrap px-5 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[12px] font-semibold ${scoreColor(bartender.score)} ${scoreBorder(bartender.score)}`}
+                            >
+                              {bartender.score}
+                            </span>
+                          </td>
+
+                          {/* Numeric columns */}
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                            ${bartender.salesHr.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                            ${bartender.tipsHr.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                            {bartender.tipPct.toFixed(1)}%
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                            ${bartender.avgCheck.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-gray-700">
+                            {bartender.guestsHr.toFixed(1)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

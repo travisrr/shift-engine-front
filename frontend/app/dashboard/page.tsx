@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import Sidebar from '../components/Sidebar';
 import Dashboard from '../components/Dashboard';
 import type { ServerData } from '../components/Dashboard';
-import { getUploadByDate, saveUpload, type ServerScore } from '../../lib/supabase-helpers';
+import { getUploadByDate, getUploadByDateWithJobTitles, saveUpload, type ServerScore } from '../../lib/supabase-helpers';
 
 function todayISO() {
   return new Date().toISOString().split('T')[0];
@@ -170,6 +170,7 @@ function serverScoreToServerData(scores: ServerScore[]): ServerData[] {
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(todayISO);
   const [servers, setServers] = useState<ServerData[]>([]);
+  const [bartenders, setBartenders] = useState<ServerData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -182,17 +183,25 @@ export default function DashboardPage() {
       setUploadSuccess(null);
 
       try {
-        const result = await getUploadByDate(selectedDate);
+        const result = await getUploadByDateWithJobTitles(selectedDate);
         if (result && result.scores && result.scores.length > 0) {
-          setServers(serverScoreToServerData(result.scores));
+          // Filter by job title
+          const serverScores = result.scores.filter(s => s.job_title === 'Server');
+          const bartenderScores = result.scores.filter(s => s.job_title === 'Bar Tender');
+          
+          setServers(serverScoreToServerData(serverScores));
+          setBartenders(serverScoreToServerData(bartenderScores));
         } else {
           // Fallback to mock data when no CSV has been uploaded
+          // All mock data defaults to Servers
           setServers(mockServers);
+          setBartenders([]);
         }
       } catch (err) {
         console.error('Error loading data:', err);
         // Fallback to mock data on error
         setServers(mockServers);
+        setBartenders([]);
       } finally {
         setIsLoading(false);
       }
@@ -261,9 +270,10 @@ export default function DashboardPage() {
         )}
         <Dashboard
           servers={servers}
+          bartenders={bartenders}
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
-          hasData={servers.length > 0}
+          hasData={servers.length > 0 || bartenders.length > 0}
         />
       </div>
     </div>
