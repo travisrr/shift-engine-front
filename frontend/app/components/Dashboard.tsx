@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import {
   Trophy,
   DollarSign,
@@ -9,6 +10,8 @@ import {
   TrendingUp,
   CalendarDays,
   Info,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 /* ─────────────────── Tooltip Header Component ─────────────────── */
@@ -37,6 +40,40 @@ function TooltipHeader({ label, tooltip, align = 'left' }: TooltipHeaderProps) {
   );
 }
 
+/* ─────────────────── Sortable Header Component ─────────────────── */
+
+interface SortableHeaderProps {
+  label: string;
+  tooltip: string;
+  sortKey: SortKey;
+  currentSort: SortConfig;
+  onSort: (key: SortKey) => void;
+  align?: 'left' | 'right';
+}
+
+function SortableHeader({ label, tooltip, sortKey, currentSort, onSort, align = 'left' }: SortableHeaderProps) {
+  const isActive = currentSort.key === sortKey;
+
+  return (
+    <button
+      onClick={() => onSort(sortKey)}
+      className={`group flex items-center gap-1.5 transition-colors hover:text-slate-600 ${align === 'right' ? 'ml-auto' : ''}`}
+    >
+      <TooltipHeader label={label} tooltip={tooltip} align={align} />
+      <span className="inline-flex flex-col">
+        <ChevronUp
+          className={`h-3 w-3 -mb-0.5 ${isActive && currentSort.direction === 'asc' ? 'text-slate-600' : 'text-slate-300'}`}
+          strokeWidth={1.5}
+        />
+        <ChevronDown
+          className={`h-3 w-3 -mt-0.5 ${isActive && currentSort.direction === 'desc' ? 'text-slate-600' : 'text-slate-300'}`}
+          strokeWidth={1.5}
+        />
+      </span>
+    </button>
+  );
+}
+
 /* ─────────────────── Types ─────────────────── */
 
 export interface ServerData {
@@ -55,6 +92,14 @@ interface DashboardProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   hasData: boolean;
+}
+
+type SortKey = 'score' | 'salesHr' | 'tipsHr' | 'tipPct' | 'avgCheck' | 'guestsHr';
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  key: SortKey;
+  direction: SortDirection;
 }
 
 /* ─────────────────── Helpers ─────────────────── */
@@ -82,12 +127,52 @@ export default function Dashboard({
   onDateChange,
   hasData,
 }: DashboardProps) {
+  // Sort state for servers table
+  const [serverSort, setServerSort] = useState<SortConfig>({ key: 'score', direction: 'desc' });
+  // Sort state for bartenders table
+  const [bartenderSort, setBartenderSort] = useState<SortConfig>({ key: 'score', direction: 'desc' });
+
+  // Handle sort toggle
+  const handleServerSort = (key: SortKey) => {
+    setServerSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  const handleBartenderSort = (key: SortKey) => {
+    setBartenderSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  // Sort data based on current sort config
+  const sortedServers = useMemo(() => {
+    return [...servers].sort((a, b) => {
+      const aValue = a[serverSort.key];
+      const bValue = b[serverSort.key];
+      const multiplier = serverSort.direction === 'asc' ? 1 : -1;
+      return (aValue - bValue) * multiplier;
+    });
+  }, [servers, serverSort]);
+
+  const sortedBartenders = useMemo(() => {
+    return [...bartenders].sort((a, b) => {
+      const aValue = a[bartenderSort.key];
+      const bValue = b[bartenderSort.key];
+      const multiplier = bartenderSort.direction === 'asc' ? 1 : -1;
+      return (aValue - bValue) * multiplier;
+    });
+  }, [bartenders, bartenderSort]);
+
+  // Calculate stats based on original score-sorted data
   const topPerformer = servers.length > 0 ? servers[0] : null;
   const highestAvgCheck =
     servers.length > 0
       ? servers.reduce((max, s) => (s.avgCheck > max.avgCheck ? s : max), servers[0])
       : null;
-  
+
   const topBartender = bartenders.length > 0 ? bartenders[0] : null;
 
   return (
@@ -206,50 +291,68 @@ export default function Dashboard({
                         Server
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Final Score"
                           tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
+                          sortKey="score"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                         />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Sales/hr"
                           tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
+                          sortKey="salesHr"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                           align="right"
                         />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Tips/hr"
                           tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
+                          sortKey="tipsHr"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                           align="right"
                         />
                       </th>
                       <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Tip %"
                           tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
+                          sortKey="tipPct"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                           align="right"
                         />
                       </th>
                       <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Avg Check"
                           tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
+                          sortKey="avgCheck"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                           align="right"
                         />
                       </th>
                       <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                        <TooltipHeader
+                        <SortableHeader
                           label="Guests/hr"
                           tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
+                          sortKey="guestsHr"
+                          currentSort={serverSort}
+                          onSort={handleServerSort}
                           align="right"
                         />
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {servers.map((server, idx) => (
+                    {sortedServers.map((server, idx) => (
                       <tr
                         key={server.name}
                         className="transition-colors hover:bg-slate-50/80"
@@ -318,50 +421,68 @@ export default function Dashboard({
                           Bar Tender
                         </th>
                         <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Final Score"
                             tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
+                            sortKey="score"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                           />
                         </th>
                         <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Sales/hr"
                             tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
+                            sortKey="salesHr"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                             align="right"
                           />
                         </th>
                         <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Tips/hr"
                             tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
+                            sortKey="tipsHr"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                             align="right"
                           />
                         </th>
                         <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Tip %"
                             tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
+                            sortKey="tipPct"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                             align="right"
                           />
                         </th>
                         <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Avg Check"
                             tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
+                            sortKey="avgCheck"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                             align="right"
                           />
                         </th>
                         <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
-                          <TooltipHeader
+                          <SortableHeader
                             label="Guests/hr"
                             tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
+                            sortKey="guestsHr"
+                            currentSort={bartenderSort}
+                            onSort={handleBartenderSort}
                             align="right"
                           />
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {bartenders.map((bartender, idx) => (
+                      {sortedBartenders.map((bartender, idx) => (
                         <tr
                           key={bartender.name}
                           className="transition-colors hover:bg-slate-50/80"
