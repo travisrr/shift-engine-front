@@ -12,6 +12,7 @@ import {
   Info,
   ChevronUp,
   ChevronDown,
+  RefreshCw,
 } from 'lucide-react';
 
 /* ─────────────────── Tooltip Header Component ─────────────────── */
@@ -92,6 +93,8 @@ interface DashboardProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   hasData: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 type SortKey = 'score' | 'salesHr' | 'tipsHr' | 'tipPct' | 'avgCheck' | 'guestsHr';
@@ -126,6 +129,8 @@ export default function Dashboard({
   selectedDate,
   onDateChange,
   hasData,
+  onRefresh,
+  isRefreshing = false,
 }: DashboardProps) {
   // Sort state for servers table
   const [serverSort, setServerSort] = useState<SortConfig>({ key: 'score', direction: 'desc' });
@@ -190,16 +195,29 @@ export default function Dashboard({
             </p>
           </div>
 
-          {/* Date Picker */}
-          <div className="flex w-full shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:w-auto">
-            <CalendarDays className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="w-full border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none lg:w-auto"
-              id="date-picker"
-            />
+          {/* Date Picker and Refresh */}
+          <div className="flex w-full shrink-0 items-center gap-2 lg:w-auto">
+            <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <CalendarDays className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => onDateChange(e.target.value)}
+                className="w-full border-none bg-transparent text-[13px] font-medium text-slate-700 outline-none lg:w-auto"
+                id="date-picker"
+              />
+            </div>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+                title="Refresh data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} strokeWidth={1.75} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            )}
           </div>
         </div>
 

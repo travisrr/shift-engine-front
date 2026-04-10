@@ -176,39 +176,58 @@ export default function DashboardPage() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   // Load data from Supabase when date changes (fallback to mock data)
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      setUploadError(null);
-      setUploadSuccess(null);
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
 
-      try {
-        const result = await getUploadByDateWithJobTitles(selectedDate);
-        if (result && result.scores && result.scores.length > 0) {
-          // Filter by job title
-          const serverScores = result.scores.filter(s => s.job_title === 'Server');
-          const bartenderScores = result.scores.filter(s => s.job_title === 'Bar Tender');
-          
-          setServers(serverScoreToServerData(serverScores));
-          setBartenders(serverScoreToServerData(bartenderScores));
-        } else {
-          // Fallback to mock data when no CSV has been uploaded
-          // All mock data defaults to Servers
-          setServers(mockServers);
-          setBartenders([]);
-        }
-      } catch (err) {
-        console.error('Error loading data:', err);
-        // Fallback to mock data on error
+    try {
+      console.log('[Dashboard] Loading data for date:', selectedDate);
+      const result = await getUploadByDateWithJobTitles(selectedDate);
+      
+      if (result && result.scores && result.scores.length > 0) {
+        console.log('[Dashboard] Loaded scores:', result.scores.map(s => ({ name: s.server_name, job_title: s.job_title })));
+        
+        // Filter by job title
+        const serverScores = result.scores.filter(s => s.job_title === 'Server');
+        const bartenderScores = result.scores.filter(s => s.job_title === 'Bar Tender');
+        
+        console.log('[Dashboard] Servers:', serverScores.length, 'Bartenders:', bartenderScores.length);
+        
+        setServers(serverScoreToServerData(serverScores));
+        setBartenders(serverScoreToServerData(bartenderScores));
+      } else {
+        console.log('[Dashboard] No data found, using mock data');
+        // Fallback to mock data when no CSV has been uploaded
+        // All mock data defaults to Servers
         setServers(mockServers);
         setBartenders([]);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error('[Dashboard] Error loading data:', err);
+      // Fallback to mock data on error
+      setServers(mockServers);
+      setBartenders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedDate]);
+
+  // Initial load and when date changes
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Refresh data when window regains focus (e.g., after editing job title in another tab)
+  useEffect(() => {
+    function handleFocus() {
+      console.log('[Dashboard] Window focused, refreshing data...');
+      loadData();
     }
 
-    loadData();
-  }, [selectedDate]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loadData]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setUploadError(null);
@@ -274,6 +293,8 @@ export default function DashboardPage() {
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
           hasData={servers.length > 0 || bartenders.length > 0}
+          onRefresh={loadData}
+          isRefreshing={isLoading}
         />
       </div>
     </div>
