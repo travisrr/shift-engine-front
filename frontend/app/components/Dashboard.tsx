@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ChevronDown,
   RefreshCw,
+  ChevronDownIcon,
 } from 'lucide-react';
 
 /* ─────────────────── Tooltip Header Component ─────────────────── */
@@ -136,6 +137,9 @@ export default function Dashboard({
   const [serverSort, setServerSort] = useState<SortConfig>({ key: 'score', direction: 'desc' });
   // Sort state for bartenders table
   const [bartenderSort, setBartenderSort] = useState<SortConfig>({ key: 'score', direction: 'desc' });
+  // Collapse state for sections
+  const [isServersCollapsed, setIsServersCollapsed] = useState(false);
+  const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
 
   // Handle sort toggle
   const handleServerSort = (key: SortKey) => {
@@ -292,16 +296,32 @@ export default function Dashboard({
 
             {/* ── Server Scorecard Table ── */}
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 px-5 py-3.5">
-                <h2 className="text-[14px] font-semibold text-slate-900">
-                  Server Scorecard
-                </h2>
-                <p className="mt-0.5 text-[12px] text-slate-400">
-                  Ranked by composite performance score
-                </p>
-              </div>
+              <button
+                onClick={() => setIsServersCollapsed(!isServersCollapsed)}
+                className="flex w-full items-center justify-between border-b border-slate-200 px-5 py-3.5 text-left transition-colors hover:bg-slate-50"
+              >
+                <div>
+                  <h2 className="text-[14px] font-semibold text-slate-900">
+                    Server Scorecard
+                  </h2>
+                  <p className="mt-0.5 text-[12px] text-slate-400">
+                    {isServersCollapsed
+                      ? `${servers.length} servers hidden`
+                      : 'Ranked by composite performance score'}
+                  </p>
+                </div>
+                <div className="flex h-7 w-7 items-center justify-center rounded-md transition-colors">
+                  <ChevronDownIcon
+                    className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
+                      isServersCollapsed ? '-rotate-90' : 'rotate-0'
+                    }`}
+                    strokeWidth={2}
+                  />
+                </div>
+              </button>
 
-              <div className="overflow-x-auto">
+              {!isServersCollapsed && (
+                <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px] text-left text-[13px] lg:min-w-0">
                   <thead>
                     <tr className="border-b border-slate-100">
@@ -417,21 +437,38 @@ export default function Dashboard({
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
 
             {/* ── Bar Tender Scorecard Table ── */}
             {bartenders.length > 0 && (
               <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-5 py-3.5">
-                  <h2 className="text-[14px] font-semibold text-slate-900">
-                    Bar Tender Scorecard
-                  </h2>
-                  <p className="mt-0.5 text-[12px] text-slate-400">
-                    Ranked by composite performance score
-                  </p>
-                </div>
+                <button
+                  onClick={() => setIsBartendersCollapsed(!isBartendersCollapsed)}
+                  className="flex w-full items-center justify-between border-b border-slate-200 px-5 py-3.5 text-left transition-colors hover:bg-slate-50"
+                >
+                  <div>
+                    <h2 className="text-[14px] font-semibold text-slate-900">
+                      Bar Tender Scorecard
+                    </h2>
+                    <p className="mt-0.5 text-[12px] text-slate-400">
+                      {isBartendersCollapsed
+                        ? `${bartenders.length} bartenders hidden`
+                        : 'Ranked by composite performance score'}
+                    </p>
+                  </div>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md transition-colors">
+                    <ChevronDownIcon
+                      className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
+                        isBartendersCollapsed ? '-rotate-90' : 'rotate-0'
+                      }`}
+                      strokeWidth={2}
+                    />
+                  </div>
+                </button>
 
-                <div className="overflow-x-auto">
+                {!isBartendersCollapsed && (
+                  <div className="overflow-x-auto">
                   <table className="w-full min-w-[800px] text-left text-[13px] lg:min-w-0">
                     <thead>
                       <tr className="border-b border-slate-100">
@@ -547,6 +584,7 @@ export default function Dashboard({
                     </tbody>
                   </table>
                 </div>
+                )}
               </div>
             )}
           </>
