@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Trophy,
   DollarSign,
@@ -14,6 +14,7 @@ import {
   ChevronDown,
   RefreshCw,
   ChevronDownIcon,
+  Building2,
 } from 'lucide-react';
 
 /* ─────────────────── Tooltip Header Component ─────────────────── */
@@ -32,11 +33,11 @@ function TooltipHeader({ label, tooltip, align = 'left' }: TooltipHeaderProps) {
         className="h-3 w-3 cursor-help text-slate-300 transition-colors group-hover:text-slate-400"
         strokeWidth={1.5}
       />
-      {/* Tooltip */}
-      <div className={`pointer-events-none absolute bottom-full mb-2 w-48 rounded-lg bg-slate-800 px-3 py-2 text-[11px] font-normal normal-case tracking-normal text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 ${align === 'right' ? 'right-0' : 'left-0'} z-50`}>
+      {/* Tooltip - positioned below to avoid overflow clipping */}
+      <div className={`pointer-events-none absolute top-full mt-2 w-48 rounded-lg bg-slate-800 px-3 py-2 text-[11px] font-normal normal-case tracking-normal text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 ${align === 'right' ? 'right-0' : 'left-0'} z-50`}>
         {tooltip}
-        {/* Arrow */}
-        <div className={`absolute top-full ${align === 'right' ? 'right-3' : 'left-3'} -mt-1 border-4 border-transparent border-t-slate-800`} />
+        {/* Arrow pointing up */}
+        <div className={`absolute bottom-full ${align === 'right' ? 'right-3' : 'left-3'} -mb-1 border-4 border-transparent border-b-slate-800`} />
       </div>
     </div>
   );
@@ -57,22 +58,25 @@ function SortableHeader({ label, tooltip, sortKey, currentSort, onSort, align = 
   const isActive = currentSort.key === sortKey;
 
   return (
-    <button
-      onClick={() => onSort(sortKey)}
-      className={`group flex items-center gap-1.5 transition-colors hover:text-slate-600 ${align === 'right' ? 'ml-auto' : ''}`}
-    >
+    <div className={`group flex items-center gap-1.5 ${align === 'right' ? 'justify-end' : ''}`}>
+      {/* Tooltip wrapper outside the button */}
       <TooltipHeader label={label} tooltip={tooltip} align={align} />
-      <span className="inline-flex flex-col">
-        <ChevronUp
-          className={`h-3 w-3 -mb-0.5 ${isActive && currentSort.direction === 'asc' ? 'text-slate-600' : 'text-slate-300'}`}
-          strokeWidth={1.5}
-        />
-        <ChevronDown
-          className={`h-3 w-3 -mt-0.5 ${isActive && currentSort.direction === 'desc' ? 'text-slate-600' : 'text-slate-300'}`}
-          strokeWidth={1.5}
-        />
-      </span>
-    </button>
+      <button
+        onClick={() => onSort(sortKey)}
+        className="flex items-center transition-colors hover:text-slate-600"
+      >
+        <span className="inline-flex flex-col">
+          <ChevronUp
+            className={`h-3 w-3 -mb-0.5 ${isActive && currentSort.direction === 'asc' ? 'text-slate-600' : 'text-slate-300'}`}
+            strokeWidth={1.5}
+          />
+          <ChevronDown
+            className={`h-3 w-3 -mt-0.5 ${isActive && currentSort.direction === 'desc' ? 'text-slate-600' : 'text-slate-300'}`}
+            strokeWidth={1.5}
+          />
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -124,6 +128,12 @@ function scoreBorder(score: number) {
 
 /* ─────────────────── Component ─────────────────── */
 
+const RESTAURANTS = [
+  { id: 'german-town', name: 'German Town Cafe' },
+  { id: 'karriongton', name: 'Karriongton Rowe' },
+  { id: 'park-cafe', name: 'Park Cafe' },
+] as const;
+
 export default function Dashboard({
   servers,
   bartenders = [],
@@ -140,6 +150,27 @@ export default function Dashboard({
   // Collapse state for sections
   const [isServersCollapsed, setIsServersCollapsed] = useState(false);
   const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
+  // Restaurant selector state
+  const [selectedRestaurant, setSelectedRestaurant] = useState(RESTAURANTS[0].id);
+  const [isRestaurantDropdownOpen, setIsRestaurantDropdownOpen] = useState(false);
+
+  const activeRestaurant = RESTAURANTS.find(r => r.id === selectedRestaurant) ?? RESTAURANTS[0];
+
+  // Ref for dropdown to handle click outside
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsRestaurantDropdownOpen(false);
+      }
+    }
+    if (isRestaurantDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isRestaurantDropdownOpen]);
 
   // Handle sort toggle
   const handleServerSort = (key: SortKey) => {
@@ -189,11 +220,52 @@ export default function Dashboard({
       <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
         {/* ── Header with Date Picker ── */}
         <div className="mb-8 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
-          <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
-              Performance Dashboard
-            </h1>
-            <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
+                Performance Dashboard
+              </h1>
+              {/* Restaurant Selector Dropdown */}
+              <div ref={dropdownRef} className="relative">
+                <button
+                  onClick={() => setIsRestaurantDropdownOpen(!isRestaurantDropdownOpen)}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                >
+                  <Building2 className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
+                  <span>{activeRestaurant.name}</span>
+                  <ChevronDownIcon
+                    className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                      isRestaurantDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                    strokeWidth={2}
+                  />
+                </button>
+                {isRestaurantDropdownOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                    {RESTAURANTS.map((restaurant) => (
+                      <button
+                        key={restaurant.id}
+                        onClick={() => {
+                          setSelectedRestaurant(restaurant.id);
+                          setIsRestaurantDropdownOpen(false);
+                        }}
+                        className={`flex w-full items-center px-4 py-2 text-left text-[13px] transition-colors hover:bg-slate-50 ${
+                          selectedRestaurant === restaurant.id
+                            ? 'bg-slate-50 font-medium text-slate-900'
+                            : 'text-slate-600'
+                        }`}
+                      >
+                        <span className="flex-1">{restaurant.name}</span>
+                        {selectedRestaurant === restaurant.id && (
+                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-[13px] leading-relaxed text-slate-500">
               Upload Toast data to generate server scorecards and surface
               actionable insights.
             </p>
@@ -328,7 +400,7 @@ export default function Dashboard({
                       <th className="w-[20%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         Server
                       </th>
-                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Final Score"
                           tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
@@ -337,7 +409,7 @@ export default function Dashboard({
                           onSort={handleServerSort}
                         />
                       </th>
-                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Sales/hr"
                           tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
@@ -347,7 +419,7 @@ export default function Dashboard({
                           align="right"
                         />
                       </th>
-                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Tips/hr"
                           tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
@@ -357,7 +429,7 @@ export default function Dashboard({
                           align="right"
                         />
                       </th>
-                      <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[10%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Tip %"
                           tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
@@ -367,7 +439,7 @@ export default function Dashboard({
                           align="right"
                         />
                       </th>
-                      <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[14%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Avg Check"
                           tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
@@ -377,7 +449,7 @@ export default function Dashboard({
                           align="right"
                         />
                       </th>
-                      <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                      <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                         <SortableHeader
                           label="Guests/hr"
                           tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
@@ -475,7 +547,7 @@ export default function Dashboard({
                         <th className="w-[20%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           Bar Tender
                         </th>
-                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Final Score"
                             tooltip="Composite performance score (0-100) based on sales/hr, tips/hr, tip percentage, and average check size"
@@ -484,7 +556,7 @@ export default function Dashboard({
                             onSort={handleBartenderSort}
                           />
                         </th>
-                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Sales/hr"
                             tooltip="Total sales divided by hours worked. Higher values indicate better revenue generation efficiency."
@@ -494,7 +566,7 @@ export default function Dashboard({
                             align="right"
                           />
                         </th>
-                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Tips/hr"
                             tooltip="Total tips earned divided by hours worked. Reflects customer satisfaction and service quality."
@@ -504,7 +576,7 @@ export default function Dashboard({
                             align="right"
                           />
                         </th>
-                        <th className="w-[10%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[10%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Tip %"
                             tooltip="Tips as a percentage of total sales. Indicates how generously customers tip relative to their bill."
@@ -514,7 +586,7 @@ export default function Dashboard({
                             align="right"
                           />
                         </th>
-                        <th className="w-[14%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[14%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Avg Check"
                             tooltip="Average check amount per guest. Higher values suggest effective upselling and menu knowledge."
@@ -524,7 +596,7 @@ export default function Dashboard({
                             align="right"
                           />
                         </th>
-                        <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
+                        <th className="w-[12%] overflow-visible whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 lg:px-5">
                           <SortableHeader
                             label="Guests/hr"
                             tooltip="Number of guests served per hour. Measures speed of service and table turnover efficiency."
