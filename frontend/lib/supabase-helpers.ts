@@ -112,10 +112,11 @@ export async function getUploadByDateWithJobTitles(date: string) {
 
   if (scoresError) throw scoresError
 
-  // Fetch all wait_staff to map names to job titles
+  // Fetch active wait_staff to map names to job titles (exclude archived)
   const { data: staff, error: staffError } = await supabase
     .from('wait_staff')
     .select('full_name, job_title')
+    .eq('status', 'Active')
 
   if (staffError) throw staffError
 
