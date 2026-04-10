@@ -60,6 +60,7 @@ export default function EditTeamPage() {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingJobTitleId, setUpdatingJobTitleId] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [availableServers, setAvailableServers] = useState<string[]>([]);
   const [selectedServers, setSelectedServers] = useState<Set<string>>(new Set());
@@ -269,6 +270,36 @@ export default function EditTeamPage() {
       month: 'short',
       day: 'numeric',
     });
+  }
+
+  async function handleUpdateJobTitle(
+    staffId: string,
+    newJobTitle: 'Server' | 'Bar Tender'
+  ) {
+    setUpdatingJobTitleId(staffId);
+
+    try {
+      const { client, error: supaError } = await getSupabase();
+      if (!client) throw new Error(supaError || 'Database not available');
+
+      const { error } = await client
+        .from('wait_staff')
+        .update({ job_title: newJobTitle })
+        .eq('id', staffId);
+
+      if (error) throw error;
+
+      // Update local state
+      setStaff((prev) =>
+        prev.map((member) =>
+          member.id === staffId ? { ...member, job_title: newJobTitle } : member
+        )
+      );
+    } catch (err) {
+      console.error('Error updating job title:', err);
+    } finally {
+      setUpdatingJobTitleId(null);
+    }
   }
 
   // Mock server names from dashboard (fallback when no CSV uploaded yet)
@@ -525,10 +556,45 @@ export default function EditTeamPage() {
                             {member.full_name}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 lg:px-5">
-                          <span className="text-gray-600">
-                            {member.job_title}
-                          </span>
+                        <td className="whitespace-nowrap px-4 py-2 lg:px-5">
+                          <div className="relative">
+                            <select
+                              value={member.job_title}
+                              onChange={(e) =>
+                                handleUpdateJobTitle(
+                                  member.id,
+                                  e.target.value as 'Server' | 'Bar Tender'
+                                )
+                              }
+                              disabled={updatingJobTitleId === member.id}
+                              className="w-full cursor-pointer appearance-none rounded-md border border-gray-200 bg-white px-3 py-1.5 pr-8 text-[13px] text-gray-700 outline-none transition-colors hover:border-gray-300 focus:border-gray-400 disabled:opacity-50"
+                            >
+                              <option value="Server">Server</option>
+                              <option value="Bar Tender">Bar Tender</option>
+                            </select>
+                            {updatingJobTitleId === member.id && (
+                              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                              </div>
+                            )}
+                            {!updatingJobTitleId && (
+                              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                                <svg
+                                  className="h-4 w-4 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 lg:px-5">
                           <span
