@@ -68,6 +68,8 @@ export default function EditTeamPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [jobTitleError, setJobTitleError] = useState<string | null>(null);
+  const [jobTitleSuccess, setJobTitleSuccess] = useState<string | null>(null);
 
   // Fetch staff data on mount
   useEffect(() => {
@@ -144,6 +146,8 @@ export default function EditTeamPage() {
     setSelectedStaff(null);
     setFormError(null);
     setArchiveError(null);
+    setJobTitleError(null);
+    setJobTitleSuccess(null);
   }
 
   function handleInputChange(
@@ -288,27 +292,67 @@ export default function EditTeamPage() {
     staffId: string,
     newJobTitle: 'Server' | 'Bar Tender'
   ) {
+    // Find the staff member to get their name and current job title
+    const staffMember = staff.find((s) => s.id === staffId);
+    if (!staffMember) return;
+
+    const originalJobTitle = staffMember.job_title;
+
+    // Clear any previous messages
+    setJobTitleError(null);
+    setJobTitleSuccess(null);
     setUpdatingJobTitleId(staffId);
+
+    // Optimistically update UI
+    setStaff((prev) =>
+      prev.map((member) =>
+        member.id === staffId ? { ...member, job_title: newJobTitle } : member
+      )
+    );
 
     try {
       const { client, error: supaError } = await getSupabase();
       if (!client) throw new Error(supaError || 'Database not available');
 
-      const { error } = await client
+      const { error, data } = await client
         .from('wait_staff')
         .update({ job_title: newJobTitle })
-        .eq('id', staffId);
+        .eq('id', staffId)
+        .select();
 
       if (error) throw error;
 
-      // Update local state
-      setStaff((prev) =>
-        prev.map((member) =>
-          member.id === staffId ? { ...member, job_title: newJobTitle } : member
-        )
+      // Verify the update was actually applied
+      if (!data || data.length === 0) {
+        throw new Error('Update may not have been saved - no data returned');
+      }
+
+      // Show success message
+      setJobTitleSuccess(
+        `${staffMember.full_name} updated to ${newJobTitle}`
       );
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setJobTitleSuccess(null), 3000);
     } catch (err) {
       console.error('Error updating job title:', err);
+
+      // Revert local state on error
+      setStaff((prev) =>
+        prev.map((member) =>
+          member.id === staffId
+            ? { ...member, job_title: originalJobTitle }
+            : member
+        )
+      );
+
+      // Show error message
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update job title';
+      setJobTitleError(`${staffMember.full_name}: ${errorMessage}`);
+
+      // Clear error after 5 seconds
+      setTimeout(() => setJobTitleError(null), 5000);
     } finally {
       setUpdatingJobTitleId(null);
     }
@@ -489,6 +533,22 @@ export default function EditTeamPage() {
               Manage server profiles, wages, and employment status.
             </p>
           </div>
+
+          {/* ── Job Title Update Messages ── */}
+          {(jobTitleError || jobTitleSuccess) && (
+            <div className="mb-4 space-y-2">
+              {jobTitleError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+                  {jobTitleError}
+                </div>
+              )}
+              {jobTitleSuccess && (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-700">
+                  {jobTitleSuccess}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Action Bar ── */}
           <div className="mb-6 flex justify-end gap-3">
