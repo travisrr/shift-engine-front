@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, AlertTriangle, Download } from 'lucide-react';
+import { Plus, Pencil, Archive, X, Download } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
 
 // Lazy Supabase client to avoid build-time errors
@@ -22,6 +22,7 @@ async function getSupabase() {
 interface WaitStaff {
   id: string;
   full_name: string;
+  job_title: 'Server' | 'Bar Tender';
   hourly_rate: number;
   hire_date: string;
   status: 'Active' | 'Inactive';
@@ -31,6 +32,7 @@ interface WaitStaff {
 
 interface FormData {
   full_name: string;
+  job_title: 'Server' | 'Bar Tender';
   hourly_rate: string;
   hire_date: string;
   status: 'Active' | 'Inactive';
@@ -51,6 +53,7 @@ export default function EditTeamPage() {
   const [selectedStaff, setSelectedStaff] = useState<WaitStaff | null>(null);
   const [formData, setFormData] = useState<FormData>({
     full_name: '',
+    job_title: 'Server',
     hourly_rate: '2.13',
     hire_date: new Date().toISOString().split('T')[0],
     status: 'Active',
@@ -105,6 +108,7 @@ export default function EditTeamPage() {
   function openAddModal() {
     setFormData({
       full_name: '',
+      job_title: 'Server',
       hourly_rate: '2.13',
       hire_date: new Date().toISOString().split('T')[0],
       status: 'Active',
@@ -117,6 +121,7 @@ export default function EditTeamPage() {
     setSelectedStaff(staffMember);
     setFormData({
       full_name: staffMember.full_name,
+      job_title: staffMember.job_title,
       hourly_rate: staffMember.hourly_rate.toString(),
       hire_date: staffMember.hire_date,
       status: staffMember.status,
@@ -165,6 +170,7 @@ export default function EditTeamPage() {
 
       const { error } = await client.from('wait_staff').insert({
         full_name: formData.full_name.trim(),
+        job_title: formData.job_title,
         hourly_rate: hourlyRate,
         hire_date: formData.hire_date,
         status: formData.status,
@@ -206,6 +212,7 @@ export default function EditTeamPage() {
         .from('wait_staff')
         .update({
           full_name: formData.full_name.trim(),
+          job_title: formData.job_title,
           hourly_rate: hourlyRate,
           hire_date: formData.hire_date,
           status: formData.status,
@@ -224,7 +231,7 @@ export default function EditTeamPage() {
     }
   }
 
-  async function handleDelete() {
+  async function handleArchive() {
     if (!selectedStaff) return;
 
     setIsSubmitting(true);
@@ -235,7 +242,7 @@ export default function EditTeamPage() {
 
       const { error } = await client
         .from('wait_staff')
-        .delete()
+        .update({ status: 'Inactive' })
         .eq('id', selectedStaff.id);
 
       if (error) throw error;
@@ -243,7 +250,7 @@ export default function EditTeamPage() {
       await fetchStaff();
       closeModals();
     } catch (err) {
-      console.error('Error deleting staff member:', err);
+      console.error('Error archiving staff member:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -399,6 +406,7 @@ export default function EditTeamPage() {
       const today = new Date().toISOString().split('T')[0];
       const newStaff = Array.from(selectedServers).map((name) => ({
         full_name: name,
+        job_title: 'Server' as const,
         hourly_rate: 2.13,
         hire_date: today,
         status: 'Active' as const,
@@ -463,19 +471,22 @@ export default function EditTeamPage() {
               <table className="w-full min-w-[700px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="w-[30%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
+                    <th className="w-[25%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
                       Name
                     </th>
                     <th className="w-[15%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
+                      Job Title
+                    </th>
+                    <th className="w-[12%] whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
                       Status
                     </th>
-                    <th className="w-[20%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
+                    <th className="w-[18%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
                       Hourly Rate
                     </th>
-                    <th className="w-[20%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
+                    <th className="w-[18%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
                       Hire Date
                     </th>
-                    <th className="w-[15%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
+                    <th className="w-[12%] whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 lg:px-5">
                       Actions
                     </th>
                   </tr>
@@ -483,7 +494,7 @@ export default function EditTeamPage() {
                 <tbody className="divide-y divide-gray-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                      <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                         <div className="flex items-center justify-center gap-2">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
                           Loading staff...
@@ -492,7 +503,7 @@ export default function EditTeamPage() {
                     </tr>
                   ) : staff.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center">
+                      <td colSpan={6} className="px-4 py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <p className="text-[14px] font-medium text-gray-700">
                             No staff members yet
@@ -512,6 +523,11 @@ export default function EditTeamPage() {
                         <td className="whitespace-nowrap px-4 py-3 lg:px-5">
                           <span className="font-medium text-black">
                             {member.full_name}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 lg:px-5">
+                          <span className="text-gray-600">
+                            {member.job_title}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 lg:px-5">
@@ -542,10 +558,10 @@ export default function EditTeamPage() {
                             </button>
                             <button
                               onClick={() => openDeleteModal(member)}
-                              className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                              title="Remove"
+                              className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              title="Archive"
                             >
-                              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              <Archive className="h-3.5 w-3.5" strokeWidth={1.75} />
                             </button>
                           </div>
                         </td>
@@ -610,6 +626,25 @@ export default function EditTeamPage() {
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black placeholder-gray-400 outline-none transition-colors focus:border-gray-400 focus:ring-0"
                     required
                   />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="job_title"
+                    className="mb-1.5 block text-[12px] font-medium text-gray-700"
+                  >
+                    Job Title
+                  </label>
+                  <select
+                    id="job_title"
+                    name="job_title"
+                    value={formData.job_title}
+                    onChange={handleInputChange}
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0"
+                  >
+                    <option value="Server">Server</option>
+                    <option value="Bar Tender">Bar Tender</option>
+                  </select>
                 </div>
 
                 <div>
@@ -699,7 +734,7 @@ export default function EditTeamPage() {
         </div>
       )}
 
-      {/* ── Delete Confirmation Modal ── */}
+      {/* ── Archive Confirmation Modal ── */}
       {isDeleteModalOpen && selectedStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -712,25 +747,25 @@ export default function EditTeamPage() {
           <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="p-5">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
-                  <AlertTriangle
-                    className="h-5 w-5 text-red-600"
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100">
+                  <Archive
+                    className="h-5 w-5 text-gray-600"
                     strokeWidth={1.75}
                   />
                 </div>
                 <div>
                   <h2 className="text-[15px] font-semibold text-black">
-                    Remove Staff Member
+                    Archive Staff Member
                   </h2>
                 </div>
               </div>
 
               <p className="mb-6 text-[13px] leading-relaxed text-gray-600">
-                Are you sure you want to remove{' '}
+                Are you sure you want to archive{' '}
                 <span className="font-medium text-black">
                   {selectedStaff.full_name}
                 </span>
-                ? This cannot be undone.
+                ? They will be marked as inactive and can be restored later.
               </p>
 
               <div className="flex items-center justify-end gap-3">
@@ -741,17 +776,17 @@ export default function EditTeamPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={handleArchive}
                   disabled={isSubmitting}
-                  className="rounded-md bg-red-600 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                  className="rounded-md bg-gray-700 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                      Removing...
+                      Archiving...
                     </span>
                   ) : (
-                    'Delete'
+                    'Archive'
                   )}
                 </button>
               </div>
