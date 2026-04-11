@@ -126,11 +126,15 @@ export async function getUploadByDateWithJobTitles(date: string) {
     jobTitleMap.set(s.full_name, s.job_title)
   })
 
-  // Map scores to include job_title (default to 'Server' if not found)
-  const scoresWithTitles = (scores || []).map((row: ServerScore & { id: string; upload_id: string; created_at: string }) => ({
-    ...row,
-    job_title: jobTitleMap.get(row.server_name) || 'Server',
-  }))
+  // Filter out scores for archived (inactive) employees and map job titles
+  const scoresWithTitles = (scores || [])
+    .filter((row: ServerScore & { id: string; upload_id: string; created_at: string }) =>
+      jobTitleMap.has(row.server_name) // Only keep active employees
+    )
+    .map((row: ServerScore & { id: string; upload_id: string; created_at: string }) => ({
+      ...row,
+      job_title: jobTitleMap.get(row.server_name) || 'Server',
+    }))
 
   return { upload, scores: scoresWithTitles as (ServerScore & { job_title: string; id: string; upload_id: string; created_at: string })[] }
 }

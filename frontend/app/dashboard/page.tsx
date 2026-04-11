@@ -250,8 +250,9 @@ export default function DashboardPage() {
       // Save to Supabase
       await saveUpload(selectedDate, parsedServers);
 
-      // Update the UI
-      setServers(serverScoreToServerData(parsedServers));
+      // Reload data to ensure archived employees are filtered out
+      await loadData();
+
       setUploadSuccess(`Successfully imported ${parsedServers.length} servers from ${file.name}`);
 
       // Clear success message after 3 seconds
