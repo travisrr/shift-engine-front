@@ -101,13 +101,21 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       `}
     >
       {/* Logo */}
-      <div className="flex h-11 items-center gap-2 border-b border-gray-200 px-3">
+      <Link
+        href="/"
+        className="flex h-11 items-center gap-2 border-b border-gray-200 px-3"
+      >
         <img
           src="/shift-engine-logo-bw-nobg.webp"
           alt="Shift Engine"
           className="h-6 w-auto"
         />
-      </div>
+        {!collapsed && (
+          <span className="text-sm font-semibold tracking-tight text-gray-900">
+            Shift Engine
+          </span>
+        )}
+      </Link>
 
       {/* Navigation */}
       <nav className="space-y-px px-2 pt-2">
