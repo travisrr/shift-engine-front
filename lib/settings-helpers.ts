@@ -568,6 +568,7 @@ export interface UpdateAIProviderKeyInput {
   is_default?: boolean;
   validation_status?: 'pending' | 'valid' | 'invalid' | 'expired';
   validation_error?: string | null;
+  last_validated_at?: string;
 }
 
 export async function updateAIProviderKey(
