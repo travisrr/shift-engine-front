@@ -522,9 +522,13 @@ export interface CreateAIProviderKeyInput {
   is_default?: boolean;
 }
 
+export type CreateAIProviderKeyResult =
+  | { success: true; data: AIProviderKeyPublic }
+  | { success: false; error: string };
+
 export async function createAIProviderKey(
   input: CreateAIProviderKeyInput
-): Promise<AIProviderKeyPublic | null> {
+): Promise<CreateAIProviderKeyResult> {
   const metadata = AI_PROVIDER_METADATA[input.provider];
 
   // Extract last 4 characters of key for display (safely)
@@ -553,10 +557,21 @@ export async function createAIProviderKey(
 
   if (error) {
     console.error('Error creating AI provider key:', error);
-    return null;
+    // Provide a helpful error message based on the error type
+    let errorMessage = 'Failed to save API key. Please try again.';
+    if (error.code === '42P01') {
+      errorMessage = 'Database table not found. Please run the SQL migration to create the ai_provider_keys table.';
+    } else if (error.code === '42501') {
+      errorMessage = 'Permission denied. Please check your Supabase RLS policies.';
+    } else if (error.code === '23514' || error.code === '23502') {
+      errorMessage = `Validation failed: ${error.message}`;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
   }
 
-  return data;
+  return { success: true, data };
 }
 
 export interface UpdateAIProviderKeyInput {

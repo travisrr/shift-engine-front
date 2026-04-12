@@ -24,6 +24,7 @@ import {
   type AISettings,
   type AIProviderKeyPublic,
   type AIProvider,
+  type CreateAIProviderKeyResult,
 } from '../../../lib/settings-helpers';
 
 type Tab = 'general' | 'locations' | 'ai' | 'ai-keys' | 'billing';
@@ -238,9 +239,18 @@ export default function SettingsPage() {
         updates.api_key = apiKeyInput.trim();
       }
       result = await updateAIProviderKey(editingKeyId, updates);
+      if (result) {
+        setAiProviderKeys(prev => prev.map(k => k.id === editingKeyId ? result : k));
+        setSaveMessage('API key updated successfully!');
+        resetKeyForm();
+        setIsAddingKey(false);
+        setTimeout(() => setSaveMessage(null), 5000);
+      } else {
+        setSaveMessage('Failed to update API key. Please try again.');
+      }
     } else {
       // Create new key
-      result = await createAIProviderKey({
+      const createResult = await createAIProviderKey({
         provider: selectedProvider,
         api_key: apiKeyInput.trim(),
         label: keyLabel || metadata.name,
@@ -250,35 +260,32 @@ export default function SettingsPage() {
         default_model: model,
         is_default: makeDefault || aiProviderKeys.length === 0,
       });
-    }
 
-    if (result) {
-      setAiProviderKeys(prev => {
-        if (editingKeyId) {
-          return prev.map(k => k.id === editingKeyId ? result : k);
+      if (createResult.success) {
+        const newKey = createResult.data;
+        setAiProviderKeys(prev => [...prev, newKey]);
+        setSaveMessage('API key added successfully!');
+        resetKeyForm();
+        setIsAddingKey(false);
+
+        // Auto-validate the new key
+        setIsValidating(true);
+        const validation = await validateAIProviderKey(newKey.id);
+        setIsValidating(false);
+
+        if (!validation.success) {
+          setSaveMessage(`Key saved but validation failed: ${validation.error}`);
+        } else {
+          // Refresh to get updated validation status
+          const keys = await getAIProviderKeys();
+          setAiProviderKeys(keys);
         }
-        return [...prev, result];
-      });
-      setSaveMessage(editingKeyId ? 'API key updated successfully!' : 'API key added successfully!');
-      resetKeyForm();
-      setIsAddingKey(false);
 
-      // Auto-validate the new key
-      setIsValidating(true);
-      const validation = await validateAIProviderKey(result.id);
-      setIsValidating(false);
-
-      if (!validation.success) {
-        setSaveMessage(`Key saved but validation failed: ${validation.error}`);
+        setTimeout(() => setSaveMessage(null), 5000);
       } else {
-        // Refresh to get updated validation status
-        const keys = await getAIProviderKeys();
-        setAiProviderKeys(keys);
+        // Display the detailed error message from the backend
+        setSaveMessage(createResult.error);
       }
-
-      setTimeout(() => setSaveMessage(null), 5000);
-    } else {
-      setSaveMessage('Failed to save API key. Please try again.');
     }
 
     setIsSaving(false);
