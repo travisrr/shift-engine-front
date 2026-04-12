@@ -215,11 +215,11 @@ export default function SettingsPage() {
 
             {/* Right Column - Content */}
             <div className="flex-1">
-              {/* Save message notification */}
-              {saveMessage && (
+              {/* Save message notification (hidden for AI tab, shown inline instead) */}
+              {saveMessage && activeTab !== 'ai' && (
                 <div className={`mb-4 rounded-md px-4 py-3 text-[13px] ${
-                  saveMessage.includes('success') 
-                    ? 'bg-emerald-50 text-emerald-700' 
+                  saveMessage.includes('success')
+                    ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-red-50 text-red-700'
                 }`}>
                   {saveMessage}
@@ -434,7 +434,7 @@ export default function SettingsPage() {
                     onChange={(e) => setAiInstructions(e.target.value)}
                     className="w-full min-h-[150px] rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0 resize-y"
                   />
-                  <div className="mt-4">
+                  <div className="mt-4 flex items-center gap-4">
                     <button
                       onClick={handleSaveAI}
                       disabled={isSaving}
@@ -443,6 +443,15 @@ export default function SettingsPage() {
                       {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                       Save Instructions
                     </button>
+                    {activeTab === 'ai' && saveMessage && (
+                      <span className={`text-[13px] ${
+                        saveMessage.includes('success')
+                          ? 'text-emerald-600'
+                          : 'text-red-600'
+                      }`}>
+                        {saveMessage}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
