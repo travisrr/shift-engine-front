@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase with service role for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 interface GenerateReviewRequest {
   employeeId: string;
@@ -18,6 +12,23 @@ interface GenerateReviewRequest {
   providerKeyId?: string; // Optional: specific key to use
 }
 
+// Lazy initialization of Supabase client to avoid build-time errors
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing. Please check your environment variables.');
+    }
+
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseClient;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateReviewRequest = await request.json();
@@ -27,6 +38,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required employee information' },
         { status: 400 }
+      );
+    }
+
+    // Initialize Supabase client
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to initialize database connection';
+      console.error('Supabase initialization error:', errorMsg);
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact support.' },
+        { status: 500 }
       );
     }
 

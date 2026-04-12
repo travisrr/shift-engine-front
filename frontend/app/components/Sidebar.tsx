@@ -252,7 +252,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-medium text-gray-600">
-                  Drop CSV
+                  Drop Toast CSV
                 </p>
                 <p className="text-[10px] text-gray-400">
                   or click
