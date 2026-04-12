@@ -343,14 +343,22 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  // Google model names often need the 'models/' prefix in v1beta
+  // Google model names - use -latest suffix for latest versions
+  const modelMap: Record<string, string> = {
+    'gemini-1.5-flash': 'gemini-1.5-flash-latest',
+    'gemini-1.5-pro': 'gemini-1.5-pro-latest',
+    'gemini-1.0-pro': 'gemini-1.0-pro-latest',
+    'gemini-pro': 'gemini-1.0-pro-latest',
+    'gemini-ultra': 'gemini-1.0-ultra-latest',
+  };
+
   const rawModel = providerKey.default_model || 'gemini-1.5-flash';
-  const modelName = rawModel.startsWith('models/') ? rawModel : `models/${rawModel}`;
+  const modelName = modelMap[rawModel] || rawModel;
 
   console.log('Calling Google API with model:', modelName);
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/${modelName}:generateContent?key=${providerKey.api_key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${providerKey.api_key}`,
     {
       method: 'POST',
       headers: {
