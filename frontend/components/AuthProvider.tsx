@@ -20,20 +20,37 @@ const AuthContext = createContext<AuthContextType>({
   refreshSession: async () => {},
 })
 
+function createSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    console.warn('Supabase not configured - auth features disabled')
+    return null
+  }
+
+  return createBrowserClient(url, key)
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null)
 
   useEffect(() => {
+    // Create client on mount (when env vars are available)
+    const client = createSupabaseClient()
+    setSupabase(client)
+
+    if (!client) {
+      setIsLoading(false)
+      return
+    }
+
     // Get initial session
     const getSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      const { data: { session }, error } = await client.auth.getSession()
       if (session) {
         setSession(session)
         setUser(session.user)
@@ -44,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getSession()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
@@ -55,15 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase.auth])
+  }, [])
 
   const signOut = async () => {
+    if (!supabase) return
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)
   }
 
   const refreshSession = async () => {
+    if (!supabase) return
     const { data: { session } } = await supabase.auth.refreshSession()
     setSession(session)
     setUser(session?.user ?? null)
