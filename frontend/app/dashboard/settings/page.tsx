@@ -328,7 +328,7 @@ export default function SettingsPage() {
         ...k,
         is_default: k.id === id,
       })));
-      setSaveMessage('Default provider updated');
+      setSaveMessage(`${result.provider_name} is now the default provider for AI Review Builder`);
       setTimeout(() => setSaveMessage(null), 3000);
     }
   }
@@ -897,17 +897,22 @@ export default function SettingsPage() {
                         )}
 
                         {/* Default Checkbox */}
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id="make-default"
-                            checked={makeDefault}
-                            onChange={(e) => setMakeDefault(e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
-                          />
-                          <label htmlFor="make-default" className="text-[13px] text-gray-700">
-                            Set as default provider
-                          </label>
+                        <div className="rounded-md border border-gray-200 bg-zinc-50/60 px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="make-default"
+                              checked={makeDefault}
+                              onChange={(e) => setMakeDefault(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                            />
+                            <label htmlFor="make-default" className="text-[13px] font-medium text-gray-800">
+                              Use this key for AI Review Builder by default
+                            </label>
+                          </div>
+                          <p className="mt-1 pl-6 text-[12px] text-gray-500">
+                            This is the provider the app will try first when generating reviews.
+                          </p>
                         </div>
 
                         {/* Help Link */}
@@ -952,7 +957,10 @@ export default function SettingsPage() {
                   {/* API Keys List */}
                   {aiProviderKeys.length > 0 && (
                     <div className="bg-white border border-gray-200 rounded-md p-6">
-                      <h3 className="text-[14px] font-semibold text-black mb-4">Configured API Keys</h3>
+                      <h3 className="text-[14px] font-semibold text-black mb-1">Configured API Keys</h3>
+                      <p className="mb-4 text-[12px] text-gray-500">
+                        The key marked below is the one AI Review Builder uses by default.
+                      </p>
                       <div className="space-y-3">
                         {aiProviderKeys.map((key) => (
                           <div
@@ -970,7 +978,7 @@ export default function SettingsPage() {
                                   <span className="text-[13px] font-medium text-black">{key.provider_name}</span>
                                   {key.is_default && (
                                     <span className="inline-flex items-center rounded-full bg-black px-2 py-0.5 text-[11px] font-medium text-white">
-                                      Default
+                                      Used by Review Builder
                                     </span>
                                   )}
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -1000,6 +1008,11 @@ export default function SettingsPage() {
                                   {key.label && <span className="text-[12px] text-gray-400">• {key.label}</span>}
                                   <span className="text-[11px] text-gray-400">{key.monthly_usage_count} uses this month</span>
                                 </div>
+                                <p className="mt-1 text-[11px] text-gray-500">
+                                  {key.is_default
+                                    ? 'This key is currently selected for AI Review Builder.'
+                                    : 'You can switch AI Review Builder to this key at any time.'}
+                                </p>
                                 {key.validation_error && (
                                   <p className="text-[11px] text-red-600 mt-1">{key.validation_error}</p>
                                 )}
@@ -1009,10 +1022,10 @@ export default function SettingsPage() {
                               {!key.is_default && (
                                 <button
                                   onClick={() => handleSetDefaultKey(key.id)}
-                                  className="text-gray-400 hover:text-black transition-colors p-1.5"
-                                  title="Set as default"
+                                  className="rounded-md border border-gray-200 px-2.5 py-1.5 text-[12px] font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-zinc-50 hover:text-black"
+                                  title="Use this key for AI Review Builder"
                                 >
-                                  <Check className="h-4 w-4" />
+                                  Use by Default
                                 </button>
                               )}
                               <button
