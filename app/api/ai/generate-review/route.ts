@@ -343,25 +343,10 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  // Map model names to working API names
-  // The v1beta API has specific naming requirements
-  const modelMap: Record<string, string> = {
-    // User-friendly names → API working names
-    'gemini-pro': 'gemini-pro',
-    'gemini-1.0-pro': 'gemini-pro',
-    'gemini-1.0-pro-latest': 'gemini-1.0-pro-latest',
-    'gemini-1.5-flash': 'gemini-1.5-flash-001',
-    'gemini-1.5-flash-latest': 'gemini-1.5-flash-001',
-    'gemini-1.5-pro': 'gemini-1.5-pro-001',
-    'gemini-1.5-pro-latest': 'gemini-1.5-pro-001',
-    'gemini-ultra': 'gemini-ultra',
-  };
+  // Use versioned model names directly - these are the stable API names
+  const modelName = providerKey.default_model || 'gemini-1.5-flash-001';
 
-  const rawModel = providerKey.default_model || 'gemini-pro';
-  // Use mapped name or default to gemini-pro if unknown
-  const modelName = modelMap[rawModel] || 'gemini-pro';
-
-  console.log('Calling Google API with model:', modelName, '(original:', rawModel + ')');
+  console.log('Calling Google API with model:', modelName);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${providerKey.api_key}`,

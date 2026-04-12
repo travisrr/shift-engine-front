@@ -437,7 +437,7 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
     keyPlaceholder: 'AIza...',
     keyPattern: '^AIza[ a-zA-Z0-9_-]+$',
     keyHelpUrl: 'https://makersuite.google.com/app/apikey',
-    defaultModels: ['gemini-pro', 'gemini-1.0-pro-latest', 'gemini-1.5-flash-latest'],
+    defaultModels: ['gemini-1.5-flash-001', 'gemini-1.5-pro-001', 'gemini-1.0-pro-001'],
     supportsOrganization: false,
     supportsCustomBaseUrl: false,
   },
@@ -869,19 +869,8 @@ async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean;
 
 async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
   try {
-    // Map model names to working API names
-    const modelMap: Record<string, string> = {
-      'gemini-pro': 'gemini-pro',
-      'gemini-1.0-pro': 'gemini-pro',
-      'gemini-1.0-pro-latest': 'gemini-1.0-pro-latest',
-      'gemini-1.5-flash': 'gemini-1.5-flash-001',
-      'gemini-1.5-flash-latest': 'gemini-1.5-flash-001',
-      'gemini-1.5-pro': 'gemini-1.5-pro-001',
-      'gemini-1.5-pro-latest': 'gemini-1.5-pro-001',
-    };
-
-    const rawModel = key.default_model || 'gemini-pro';
-    const modelName = modelMap[rawModel] || 'gemini-pro';
+    // Use versioned model names directly - these are the stable API names
+    const modelName = key.default_model || 'gemini-1.5-flash-001';
 
     // Test with an actual generateContent call to verify the model works
     const response = await fetch(
@@ -918,7 +907,7 @@ async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; er
       const errorData = await response.json().catch(() => null);
       const modelError = errorData?.error?.message || '';
       if (modelError.includes('not found') || modelError.includes('is not found')) {
-        return { success: false, error: `Model "${rawModel}" (${modelName}) not found or not available. Please select a different model in settings.` };
+        return { success: false, error: `Model "${modelName}" not found or not available. Please select a different model in settings.` };
       }
       return { success: false, error: `Model error: ${modelError}` };
     }
