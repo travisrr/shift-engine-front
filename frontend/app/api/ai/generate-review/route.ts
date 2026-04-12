@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Build the system prompt based on AI settings
     const instructions = aiSettings?.review_instructions || '';
-    const focusAreas = aiSettings?.focus_areas || ['upsell_metrics', 'table_turn_speed', 'guest_satisfaction'];
+    const focusAreas: string[] = aiSettings?.focus_areas || ['upsell_metrics', 'table_turn_speed', 'guest_satisfaction'];
     const maxLength = aiSettings?.max_review_length || 500;
     const includeSuggestions = aiSettings?.include_suggestions !== false;
     const effectiveTone = body.tone || aiSettings?.review_tone || 'professional';
