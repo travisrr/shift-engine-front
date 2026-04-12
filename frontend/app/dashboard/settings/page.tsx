@@ -907,8 +907,10 @@ export default function SettingsPage() {
                                     {key.validation_status === 'valid' && (
                                       <span className="relative ml-0.5 group/tooltip">
                                         <HelpCircle className="h-3 w-3 cursor-help" />
-                                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 hidden group-hover/tooltip:block w-48 bg-black text-white text-[11px] px-2 py-1.5 rounded-md shadow-lg z-10 whitespace-normal">
-                                          Your AI key was tested and works!
+                                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 hidden group-hover/tooltip:block w-56 bg-black text-white text-[11px] px-2 py-1.5 rounded-md shadow-lg z-10 whitespace-normal">
+                                          Your AI key was tested and works!{key.validation_model && (
+                                            <span className="block mt-1 text-gray-300">Tested with: {key.validation_model}</span>
+                                          )}
                                           <span className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 border-4 border-transparent border-t-black"></span>
                                         </span>
                                       </span>

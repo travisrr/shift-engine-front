@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS ai_provider_keys (
   last_validated_at     TIMESTAMPTZ,
   validation_status     TEXT DEFAULT 'pending' CHECK (validation_status IN ('pending', 'valid', 'invalid', 'expired')),
   validation_error      TEXT, -- Error message if validation failed
+  validation_model      TEXT, -- Model used for validation test
 
   -- Usage tracking
   monthly_usage_count   INTEGER DEFAULT 0,
