@@ -32,13 +32,13 @@ let supabaseClient: SupabaseClient | null = null;
 function getSupabaseClient(): SupabaseClient {
   if (!supabaseClient) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase configuration missing. Please check your environment variables.');
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
     }
 
-    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
   }
   return supabaseClient;
 }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to initialize database connection';
       console.error('Supabase initialization error:', errorMsg);
       return NextResponse.json(
-        { error: 'Missing SUPABASE_SERVICE_ROLE_KEY environment variable. Please add it to your deployment environment. Get it from Supabase Dashboard → Project Settings → Data API → service_role key.' },
+        { error: 'Supabase server credentials are missing. Set NEXT_PUBLIC_SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
         { status: 500 }
       );
     }
