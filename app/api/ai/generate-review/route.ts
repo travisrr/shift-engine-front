@@ -343,8 +343,12 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  // Google model names - gemini-pro is the most stable alias
-  const modelName = providerKey.default_model || 'gemini-pro';
+  const availableModels = await getAvailableGoogleModels(providerKey.api_key);
+  const modelName = pickGoogleModel(providerKey.default_model, availableModels);
+
+  if (!modelName) {
+    throw new Error('No Google models with generateContent support are available for this key.');
+  }
 
   console.log('Calling Google API with model:', modelName);
 
@@ -379,6 +383,48 @@ async function generateWithGoogle(
 
   const data = await response.json();
   return data.candidates[0].content.parts[0].text;
+}
+
+async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    { method: 'GET' }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Google models list error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  const models = Array.isArray(data.models) ? data.models : [];
+
+  return models
+    .filter((model: { supportedGenerationMethods?: string[] }) => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+    .map((model: { name?: string }) => String(model.name || '').replace(/^models\//, ''))
+    .filter(Boolean);
+}
+
+function pickGoogleModel(preferredModel: string | null | undefined, availableModels: string[]): string | null {
+  if (preferredModel && availableModels.includes(preferredModel)) {
+    return preferredModel;
+  }
+
+  const preferredFallbacks = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-pro',
+  ];
+
+  for (const candidate of preferredFallbacks) {
+    if (availableModels.includes(candidate)) {
+      return candidate;
+    }
+  }
+
+  return availableModels[0] || null;
 }
 
 async function generateWithOpenAICompatible(

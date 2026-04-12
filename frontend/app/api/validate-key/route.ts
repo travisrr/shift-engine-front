@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate based on provider
-    let validationResult: { success: boolean; error?: string };
+    let validationResult: { success: boolean; error?: string; model?: string };
     
     switch (key.provider) {
       case 'openai':
@@ -55,12 +55,15 @@ export async function POST(request: NextRequest) {
       .update({
         validation_status: validationResult.success ? 'valid' : 'invalid',
         validation_error: validationResult.error || null,
-        validation_model: key.default_model,
+        validation_model: validationResult.model || key.default_model,
+        ...(validationResult.success && validationResult.model && validationResult.model !== key.default_model
+          ? { default_model: validationResult.model }
+          : {}),
         last_validated_at: new Date().toISOString(),
       })
       .eq('id', keyId);
 
-    return NextResponse.json({ ...validationResult, model: key.default_model });
+    return NextResponse.json({ ...validationResult, model: validationResult.model || key.default_model });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown validation error';
     console.error('Validation error:', errorMessage);
@@ -149,9 +152,61 @@ async function validateAnthropic(key: { api_key: string; default_model: string }
   }
 }
 
-async function validateGoogle(key: { api_key: string; default_model: string }): Promise<{ success: boolean; error?: string }> {
+async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    { method: 'GET' }
+  );
+
+  if (response.status === 400 || response.status === 403) {
+    throw new Error('Invalid API key');
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.error?.message || `API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const models = Array.isArray(data.models) ? data.models : [];
+
+  return models
+    .filter((model: { supportedGenerationMethods?: string[] }) => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+    .map((model: { name?: string }) => String(model.name || '').replace(/^models\//, ''))
+    .filter(Boolean);
+}
+
+function pickGoogleModel(preferredModel: string | null | undefined, availableModels: string[]): string | null {
+  if (preferredModel && availableModels.includes(preferredModel)) {
+    return preferredModel;
+  }
+
+  const preferredFallbacks = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-pro',
+  ];
+
+  for (const candidate of preferredFallbacks) {
+    if (availableModels.includes(candidate)) {
+      return candidate;
+    }
+  }
+
+  return availableModels[0] || null;
+}
+
+async function validateGoogle(key: { api_key: string; default_model: string }): Promise<{ success: boolean; error?: string; model?: string }> {
   try {
-    const model = key.default_model || 'gemini-pro';
+    const availableModels = await getAvailableGoogleModels(key.api_key);
+    const model = pickGoogleModel(key.default_model, availableModels);
+
+    if (!model) {
+      return { success: false, error: 'No Google models with generateContent support are available for this key.' };
+    }
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.api_key}`,
       {
@@ -165,22 +220,27 @@ async function validateGoogle(key: { api_key: string; default_model: string }): 
     );
 
     if (response.status === 400 || response.status === 403) {
-      return { success: false, error: 'Invalid API key' };
+      const errorData = await response.json().catch(() => null);
+      return { success: false, error: errorData?.error?.message || 'Invalid API key', model };
     }
     if (response.status === 404) {
-      return { success: false, error: `Model "${model}" not found` };
+      return {
+        success: false,
+        error: `Configured model unavailable. Available models: ${availableModels.slice(0, 5).join(', ') || 'none found'}`,
+        model,
+      };
     }
     if (response.status === 429) {
-      return { success: false, error: 'Rate limit exceeded' };
+      return { success: false, error: 'Rate limit exceeded', model };
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      return { success: false, error: errorData?.error?.message || `API error: ${response.status}` };
+      return { success: false, error: errorData?.error?.message || `API error: ${response.status}`, model };
     }
 
-    return { success: true };
-  } catch {
-    return { success: false, error: 'Network error' };
+    return { success: true, model };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Network error' };
   }
 }
 
