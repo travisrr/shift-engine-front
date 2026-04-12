@@ -41,6 +41,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Generating review for:', body.employeeName, 'using provider:', body.providerKeyId || 'default');
+
     // Initialize Supabase client
     let supabase;
     try {
@@ -80,11 +82,14 @@ export async function POST(request: NextRequest) {
     const { data: providerKey, error: providerError } = await providerQuery.single();
 
     if (providerError || !providerKey) {
+      console.error('Provider key error:', providerError);
       return NextResponse.json(
         { error: 'No active AI provider key configured. Please add your API key in Settings > AI Keys.' },
         { status: 400 }
       );
     }
+
+    console.log('Found provider key:', providerKey.provider_name, 'model:', providerKey.default_model);
 
     // Validate the provider key status
     if (providerKey.validation_status === 'invalid' || providerKey.validation_status === 'expired') {
@@ -216,9 +221,10 @@ Write a complete, well-structured performance review that a restaurant manager w
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in generate-review API:', error);
     return NextResponse.json(
-      { error: 'Failed to generate review. Please try again.' },
+      { error: `Failed to generate review: ${errorMessage}` },
       { status: 500 }
     );
   }
@@ -264,6 +270,8 @@ async function generateWithOpenAI(
     headers['OpenAI-Organization'] = providerKey.organization_id;
   }
 
+  console.log('Calling OpenAI API with model:', providerKey.default_model);
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers,
@@ -279,11 +287,21 @@ async function generateWithOpenAI(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
+    const errorText = await response.text();
+    console.error('OpenAI API error:', response.status, errorText);
+
+    // Try to parse error message from OpenAI
+    try {
+      const errorJson = JSON.parse(errorText);
+      const errorMessage = errorJson.error?.message || `OpenAI error: ${response.status}`;
+      throw new Error(errorMessage);
+    } catch {
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText.substring(0, 200)}`);
+    }
   }
 
   const data = await response.json();
+  console.log('OpenAI response received, tokens used:', data.usage?.total_tokens);
   return data.choices[0].message.content;
 }
 
