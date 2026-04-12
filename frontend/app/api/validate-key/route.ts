@@ -59,9 +59,6 @@ export async function POST(request: NextRequest) {
         validation_status: validationResult.success ? 'valid' : 'invalid',
         validation_error: validationResult.error || null,
         validation_model: validationResult.model || key.default_model,
-        ...(validationResult.success && validationResult.model && validationResult.model !== key.default_model
-          ? { default_model: validationResult.model }
-          : {}),
         last_validated_at: new Date().toISOString(),
       })
       .eq('id', keyId);
@@ -179,84 +176,53 @@ async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
     .filter(Boolean);
 }
 
-function getOrderedGoogleModels(preferredModel: string | null | undefined, availableModels: string[]): string[] {
-  const ordered: string[] = [];
-
-  if (preferredModel && availableModels.includes(preferredModel)) {
-    ordered.push(preferredModel);
-  }
-
-  const preferredFallbacks = [
-    'gemini-2.5-flash',
-    'gemini-2.5-pro',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-001',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash-lite-001',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-pro',
-  ];
-
-  for (const candidate of preferredFallbacks) {
-    if (availableModels.includes(candidate) && !ordered.includes(candidate)) {
-      ordered.push(candidate);
-    }
-  }
-
-  for (const candidate of availableModels) {
-    if (!ordered.includes(candidate)) {
-      ordered.push(candidate);
-    }
-  }
-
-  return ordered;
-}
-
 async function validateGoogle(key: { api_key: string; default_model: string }): Promise<{ success: boolean; error?: string; model?: string }> {
   try {
+    const model = key.default_model || 'gemini-2.5-flash';
     const availableModels = await getAvailableGoogleModels(key.api_key);
-    const candidateModels = getOrderedGoogleModels(key.default_model, availableModels);
 
-    if (candidateModels.length === 0) {
+    if (availableModels.length === 0) {
       return { success: false, error: 'No Google models with generateContent support are available for this key.' };
     }
-    let lastError = '';
 
-    for (const model of candidateModels) {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.api_key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-            generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        return { success: true, model };
-      }
-
-      if (response.status === 400 || response.status === 403) {
-        const errorData = await response.json().catch(() => null);
-        return { success: false, error: errorData?.error?.message || 'Invalid API key', model };
-      }
-
-      if (response.status === 429) {
-        return { success: false, error: 'Rate limit exceeded', model };
-      }
-
-      const errorData = await response.json().catch(() => null);
-      lastError = errorData?.error?.message || `API error: ${response.status}`;
+    if (!availableModels.includes(model)) {
+      return {
+        success: false,
+        error: `Model "${model}" is not available for this key.`,
+        model,
+      };
     }
 
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.api_key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+          generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
+        }),
+      }
+    );
+
+    if (response.ok) {
+      return { success: true, model };
+    }
+
+    if (response.status === 400 || response.status === 403) {
+      const errorData = await response.json().catch(() => null);
+      return { success: false, error: errorData?.error?.message || 'Invalid API key', model };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded', model };
+    }
+
+    const errorData = await response.json().catch(() => null);
     return {
       success: false,
-      error: `Tried models: ${candidateModels.slice(0, 5).join(', ')}. Last error: ${lastError || 'unknown error'}`,
-      model: candidateModels[0],
+      error: errorData?.error?.message || `API error: ${response.status}`,
+      model,
     };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Network error' };
