@@ -437,7 +437,7 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
     keyPlaceholder: 'AIza...',
     keyPattern: '^AIza[ a-zA-Z0-9_-]+$',
     keyHelpUrl: 'https://makersuite.google.com/app/apikey',
-    defaultModels: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'],
+    defaultModels: ['gemini-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     supportsOrganization: false,
     supportsCustomBaseUrl: false,
   },
@@ -869,8 +869,8 @@ async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean;
 
 async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
   try {
-    // Google model names - use the stable names
-    const modelName = key.default_model || 'gemini-1.5-flash';
+    // Google model names - gemini-pro is the most stable alias
+    const modelName = key.default_model || 'gemini-pro';
 
     // Test with an actual generateContent call to verify the model works
     const response = await fetch(
