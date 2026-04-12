@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to initialize database connection';
       console.error('Supabase initialization error:', errorMsg);
       return NextResponse.json(
-        { error: 'Server configuration error. Please contact support.' },
+        { error: 'Missing SUPABASE_SERVICE_ROLE_KEY environment variable. Please add it to your deployment environment. Get it from Supabase Dashboard → Project Settings → Data API → service_role key.' },
         { status: 500 }
       );
     }

@@ -221,23 +221,23 @@ export default function AIReviewBuilderPage() {
                 Checking AI provider status...
               </div>
             ) : defaultProviderKey ? (
-              <div className={`mt-3 flex items-center gap-2 rounded-md border px-3 py-2 ${
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${
                 defaultProviderKey.validation_status === 'valid'
-                  ? 'border-emerald-200 bg-emerald-50/50'
+                  ? 'border-gray-200 bg-gray-50/50'
                   : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
                     ? 'border-red-200 bg-red-50/50'
                     : 'border-amber-200 bg-amber-50/50'
               }`}>
                 <Sparkles className={`h-3.5 w-3.5 ${
                   defaultProviderKey.validation_status === 'valid'
-                    ? 'text-emerald-600'
+                    ? 'text-gray-500'
                     : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
                       ? 'text-red-600'
                       : 'text-amber-600'
                 }`} strokeWidth={1.75} />
                 <span className={`text-[12px] ${
                   defaultProviderKey.validation_status === 'valid'
-                    ? 'text-emerald-700'
+                    ? 'text-gray-600'
                     : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
                       ? 'text-red-700'
                       : 'text-amber-700'
