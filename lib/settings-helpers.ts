@@ -820,7 +820,7 @@ async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; er
   try {
     // Test with a simple models list request
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${key.api_key}`,
+      `https://generativelanguage.googleapis.com/v1/models?key=${key.api_key}`,
       {
         method: 'GET',
         headers: {
