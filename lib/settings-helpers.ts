@@ -431,11 +431,11 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
   },
   google: {
     name: 'Google Gemini',
-    description: 'Gemini Pro and Ultra models',
+    description: 'Gemini Pro and Flash models',
     keyPlaceholder: 'AIza...',
     keyPattern: '^AIza[ a-zA-Z0-9_-]+$',
     keyHelpUrl: 'https://makersuite.google.com/app/apikey',
-    defaultModels: ['gemini-pro', 'gemini-ultra'],
+    defaultModels: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'],
     supportsOrganization: false,
     supportsCustomBaseUrl: false,
   },

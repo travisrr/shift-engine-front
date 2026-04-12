@@ -343,9 +343,8 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  const modelName = providerKey.default_model.includes('gemini')
-    ? providerKey.default_model
-    : 'gemini-pro';
+  // Use the provided model or default to gemini-1.5-flash
+  const modelName = providerKey.default_model || 'gemini-1.5-flash';
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${providerKey.api_key}`,
