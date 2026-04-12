@@ -39,6 +39,7 @@ const navItems: NavItem[] = [
       { label: 'AI Review Builder', href: '/dashboard/reviews', icon: MessageSquare },
     ],
   },
+  { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];
 
 interface SidebarProps {
@@ -285,10 +286,6 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
               <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             </div>
           )}
-        </button>
-        <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] text-gray-500 transition-colors hover:bg-zinc-50 hover:text-gray-700">
-          <Settings className="h-4 w-4 text-gray-400" strokeWidth={1.75} />
-          {!collapsed && 'Settings'}
         </button>
       </div>
     </aside>
