@@ -677,36 +677,19 @@ export async function setDefaultAIProviderKey(id: string): Promise<AIProviderKey
 // ============================================
 
 export async function validateAIProviderKey(id: string): Promise<{ success: boolean; error?: string; model?: string }> {
-  const key = await getAIProviderKeyById(id);
-  if (!key) {
-    return { success: false, error: 'Key not found' };
-  }
-
-  // Use the default model for validation
-  const validationModel = key.default_model;
-
   try {
-    // Perform validation based on provider
-    const validationResult = await performKeyValidation(key);
-
-    // Update the key with validation results
-    await updateAIProviderKey(id, {
-      validation_status: validationResult.success ? 'valid' : 'invalid',
-      validation_error: validationResult.error || null,
-      validation_model: validationModel,
-      last_validated_at: new Date().toISOString(),
+    // Call server-side API route to avoid CORS issues
+    const response = await fetch('/api/validate-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyId: id }),
     });
 
-    return { ...validationResult, model: validationModel };
+    const result = await response.json();
+    return result;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown validation error';
-    await updateAIProviderKey(id, {
-      validation_status: 'invalid',
-      validation_error: errorMessage,
-      validation_model: validationModel,
-      last_validated_at: new Date().toISOString(),
-    });
-    return { success: false, error: errorMessage, model: validationModel };
+    return { success: false, error: errorMessage };
   }
 }
 
