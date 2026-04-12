@@ -565,7 +565,6 @@ async function generateWithMoonshot(
         { role: 'user', content: userPrompt },
       ],
       max_tokens: Math.min(Math.max(Math.ceil(maxLength / 4), 512), 2000),
-      temperature: 1,
     }),
   });
 

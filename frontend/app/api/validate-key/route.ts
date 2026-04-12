@@ -275,7 +275,6 @@ async function validateMoonshot(key: { api_key: string; default_model: string; b
         model,
         messages: [{ role: 'user', content: 'Hi' }],
         max_tokens: 8,
-        temperature: 1,
       }),
     });
 
