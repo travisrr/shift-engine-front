@@ -391,6 +391,7 @@ export interface AIProviderKeyPublic {
   is_default: boolean;
   last_validated_at: string | null;
   validation_status: 'pending' | 'valid' | 'invalid' | 'expired';
+  validation_error: string | null;
   label: string | null;
   monthly_usage_count: number;
   created_at: string;
@@ -463,7 +464,7 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
 export async function getAIProviderKeys(): Promise<AIProviderKeyPublic[]> {
   const { data, error } = await supabase
     .from('ai_provider_keys')
-    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, label, monthly_usage_count, created_at, updated_at')
+    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, label, monthly_usage_count, created_at, updated_at')
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true });
 
@@ -478,7 +479,7 @@ export async function getAIProviderKeys(): Promise<AIProviderKeyPublic[]> {
 export async function getDefaultAIProviderKey(): Promise<AIProviderKeyPublic | null> {
   const { data, error } = await supabase
     .from('ai_provider_keys')
-    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, label, monthly_usage_count, created_at, updated_at')
+    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, label, monthly_usage_count, created_at, updated_at')
     .eq('is_default', true)
     .eq('is_active', true)
     .single();
@@ -545,7 +546,7 @@ export async function createAIProviderKey(
       is_default: input.is_default ?? false,
       validation_status: 'pending',
     })
-    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, label, monthly_usage_count, created_at, updated_at')
+    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, label, monthly_usage_count, created_at, updated_at')
     .single();
 
   if (error) {
@@ -591,7 +592,7 @@ export async function updateAIProviderKey(
     .from('ai_provider_keys')
     .update(updates)
     .eq('id', id)
-    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, label, monthly_usage_count, created_at, updated_at')
+    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, label, monthly_usage_count, created_at, updated_at')
     .single();
 
   if (error) {
@@ -639,7 +640,7 @@ export async function setDefaultAIProviderKey(id: string): Promise<AIProviderKey
     .from('ai_provider_keys')
     .update({ is_default: true })
     .eq('id', id)
-    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, label, monthly_usage_count, created_at, updated_at')
+    .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, label, monthly_usage_count, created_at, updated_at')
     .single();
 
   if (error) {
