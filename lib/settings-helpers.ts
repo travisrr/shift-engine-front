@@ -669,6 +669,7 @@ export async function validateAIProviderKey(id: string): Promise<{ success: bool
     await updateAIProviderKey(id, {
       validation_status: validationResult.success ? 'valid' : 'invalid',
       validation_error: validationResult.error || null,
+      last_validated_at: new Date().toISOString(),
     });
 
     return validationResult;
@@ -677,15 +678,14 @@ export async function validateAIProviderKey(id: string): Promise<{ success: bool
     await updateAIProviderKey(id, {
       validation_status: 'invalid',
       validation_error: errorMessage,
+      last_validated_at: new Date().toISOString(),
     });
     return { success: false, error: errorMessage };
   }
 }
 
 async function performKeyValidation(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
-  // This would typically make a lightweight API call to validate the key
-  // For now, we do basic format validation
-
+  // First do basic format validation
   switch (key.provider) {
     case 'openai':
       if (!key.api_key.startsWith('sk-') || key.api_key.length < 20) {
@@ -714,7 +714,214 @@ async function performKeyValidation(key: AIProviderKey): Promise<{ success: bool
       }
   }
 
-  return { success: true };
+  // Now perform actual API test
+  try {
+    const testResult = await testApiKey(key);
+    return testResult;
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error during validation';
+    return { success: false, error: errorMessage };
+  }
+}
+
+async function testApiKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  switch (key.provider) {
+    case 'openai':
+      return testOpenAIKey(key);
+    case 'anthropic':
+      return testAnthropicKey(key);
+    case 'google':
+      return testGoogleKey(key);
+    case 'azure_openai':
+      return testAzureOpenAIKey(key);
+    default:
+      return testCustomProviderKey(key);
+  }
+}
+
+async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${key.api_key}`,
+  };
+
+  if (key.organization_id) {
+    headers['OpenAI-Organization'] = key.organization_id;
+  }
+
+  try {
+    // Make a lightweight models list request
+    const response = await fetch('https://api.openai.com/v1/models', {
+      method: 'GET',
+      headers,
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    // Successfully authenticated
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Network error. Please check your connection and try again.' };
+  }
+}
+
+async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Make a lightweight request to list models
+    const response = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'x-api-key': key.api_key,
+        'anthropic-version': '2023-06-01',
+      },
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Network error. Please check your connection and try again.' };
+  }
+}
+
+async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Test with a simple models list request
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${key.api_key}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.status === 400 || response.status === 403) {
+      const errorData = await response.json().catch(() => null);
+      if (errorData?.error?.message?.includes('API key not valid')) {
+        return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+      }
+      return { success: false, error: errorData?.error?.message || 'API key validation failed.' };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Network error. Please check your connection and try again.' };
+  }
+}
+
+async function testAzureOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  const baseUrl = key.base_url || '';
+  const apiVersion = '2024-02-01';
+
+  try {
+    // Extract resource name from base URL and test with deployments endpoint
+    const url = `${baseUrl}/openai/deployments?api-version=${apiVersion}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'api-key': key.api_key,
+      },
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+    }
+
+    if (response.status === 404) {
+      return { success: false, error: 'Resource not found. Please check your Azure OpenAI endpoint URL.' };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Network error. Please check your connection and Azure endpoint URL.' };
+  }
+}
+
+async function testCustomProviderKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
+  const baseUrl = key.base_url || 'https://api.openai.com/v1';
+
+  try {
+    // Test with models endpoint (OpenAI-compatible)
+    const url = baseUrl.endsWith('/models')
+      ? baseUrl
+      : `${baseUrl.replace(/\/$/, '')}/models`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${key.api_key}`,
+      },
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+    }
+
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (!response.ok) {
+      // For custom providers, be more lenient - some may not have a /models endpoint
+      // If we get a 404, the key might still be valid, just the endpoint is different
+      if (response.status === 404) {
+        return { success: true };
+      }
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Network error. Please check your connection and base URL.' };
+  }
 }
 
 export function maskApiKey(key: string): string {

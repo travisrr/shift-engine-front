@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot } from 'lucide-react';
+import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot, HelpCircle } from 'lucide-react';
 import Sidebar from '../../components/Sidebar';
 import {
   getCompanySettings,
@@ -904,6 +904,15 @@ export default function SettingsPage() {
                                     {key.validation_status === 'valid' ? 'Valid' :
                                      key.validation_status === 'invalid' ? 'Invalid' :
                                      key.validation_status === 'expired' ? 'Expired' : 'Pending'}
+                                    {key.validation_status === 'valid' && (
+                                      <span className="relative ml-0.5 group/tooltip">
+                                        <HelpCircle className="h-3 w-3 cursor-help" />
+                                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 hidden group-hover/tooltip:block w-48 bg-black text-white text-[11px] px-2 py-1.5 rounded-md shadow-lg z-10 whitespace-normal">
+                                          Your AI key was tested and works!
+                                          <span className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 border-4 border-transparent border-t-black"></span>
+                                        </span>
+                                      </span>
+                                    )}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3 mt-1">
