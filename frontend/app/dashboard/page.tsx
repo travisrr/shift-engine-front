@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import Sidebar from '../components/Sidebar';
 import Dashboard from '../components/Dashboard';
 import type { ServerData } from '../components/Dashboard';
-import { getUploadByDate, getUploadByDateWithJobTitles, saveUpload, type ServerScore } from '../../lib/supabase-helpers';
+import { getUploadByDateWithJobTitles, saveUpload, type ServerScore } from '../../lib/supabase-helpers';
 
 function todayISO() {
   return new Date().toISOString().split('T')[0];
@@ -14,7 +14,9 @@ function todayISO() {
 
 /* ─────────────────── Mock Data (shown when no CSV uploaded) ─────────────────── */
 
-const mockServers: ServerData[] = [
+type MockServerSeed = Omit<ServerData, 'ppa'>;
+
+const mockServers: MockServerSeed[] = [
   { name: 'Chloe Colaianni', score: 95, salesHr: 201.0, tipsHr: 36.3, tipPct: 18.1, avgCheck: 63.0, guestsHr: 5.7 },
   { name: 'Rachel Brunet', score: 91, salesHr: 163.8, tipsHr: 31.5, tipPct: 19.2, avgCheck: 54.1, guestsHr: 5.4 },
   { name: 'Karen Mason', score: 90, salesHr: 152.0, tipsHr: 28.3, tipPct: 18.6, avgCheck: 66.0, guestsHr: 4.5 },
@@ -32,7 +34,7 @@ const mockServers: ServerData[] = [
   { name: 'Alec Ramsey', score: 76, salesHr: 116.9, tipsHr: 21.9, tipPct: 18.8, avgCheck: 68.2, guestsHr: 3.0 },
 ];
 
-const mockBartenders: ServerData[] = [
+const mockBartenders: MockServerSeed[] = [
   { name: 'Caleigh Graves', score: 92, salesHr: 776.2, tipsHr: 163.2, tipPct: 21.0, avgCheck: 45.6, guestsHr: 26.5 },
 ];
 
@@ -83,6 +85,135 @@ function getColumnValue(row: ToastCSVRow, possibleNames: string[]): string | num
   return undefined;
 }
 
+function roundTo(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+interface CohortMetricRow {
+  name: string;
+  salesHr: number;
+  tipsHr: number;
+  tipPct: number;
+  avgCheck: number;
+  guestsHr: number;
+  ppa: number;
+}
+
+interface CohortDataset {
+  servers: ServerData[];
+  cohortAverages: ServerData;
+}
+
+const EMPTY_COHORT_AVERAGES: ServerData = {
+  name: 'Cohort Average',
+  score: 75,
+  salesHr: 0,
+  tipsHr: 0,
+  tipPct: 0,
+  avgCheck: 0,
+  guestsHr: 0,
+  ppa: 0,
+};
+
+function percentageDeltaFromAverage(value: number, average: number): number {
+  if (average <= 0) return 0;
+  return (value - average) / average;
+}
+
+function buildCohortAverages(rows: CohortMetricRow[]): ServerData {
+  if (rows.length === 0) return EMPTY_COHORT_AVERAGES;
+
+  const totals = rows.reduce(
+    (acc, row) => ({
+      salesHr: acc.salesHr + row.salesHr,
+      tipsHr: acc.tipsHr + row.tipsHr,
+      tipPct: acc.tipPct + row.tipPct,
+      avgCheck: acc.avgCheck + row.avgCheck,
+      guestsHr: acc.guestsHr + row.guestsHr,
+      ppa: acc.ppa + row.ppa,
+    }),
+    { salesHr: 0, tipsHr: 0, tipPct: 0, avgCheck: 0, guestsHr: 0, ppa: 0 }
+  );
+
+  const count = rows.length;
+
+  return {
+    name: 'Cohort Average',
+    score: 75,
+    salesHr: roundTo(totals.salesHr / count, 2),
+    tipsHr: roundTo(totals.tipsHr / count, 2),
+    tipPct: roundTo(totals.tipPct / count, 1),
+    avgCheck: roundTo(totals.avgCheck / count, 2),
+    guestsHr: roundTo(totals.guestsHr / count, 1),
+    ppa: roundTo(totals.ppa / count, 2),
+  };
+}
+
+function calculateCohortScore(row: CohortMetricRow, cohortAverages: ServerData): number {
+  const ppaDelta = percentageDeltaFromAverage(row.ppa, cohortAverages.ppa);
+  const tipPctDelta = percentageDeltaFromAverage(row.tipPct, cohortAverages.tipPct);
+  const salesHrDelta = percentageDeltaFromAverage(row.salesHr, cohortAverages.salesHr);
+
+  const score =
+    75 +
+    ppaDelta * 40 +
+    tipPctDelta * 40 +
+    salesHrDelta * 20;
+
+  return Math.round(clamp(score, 40, 100));
+}
+
+function buildCohortDataset(rows: CohortMetricRow[]): CohortDataset {
+  const cohortAverages = buildCohortAverages(rows);
+
+  const servers = rows
+    .map((row) => ({
+      ...row,
+      score: calculateCohortScore(row, cohortAverages),
+    }))
+    .sort((a, b) => b.score - a.score || b.ppa - a.ppa || b.salesHr - a.salesHr);
+
+  return { servers, cohortAverages };
+}
+
+function scoreRowsToCohortDataset(scores: ServerScore[]): CohortDataset {
+  const rows: CohortMetricRow[] = scores.map((score) => {
+    const salesHr = score.sales_hr ?? 0;
+    const guestsHr = score.guests_hr ?? 0;
+
+    return {
+      name: score.server_name,
+      salesHr,
+      tipsHr: score.tips_hr ?? 0,
+      tipPct: score.tip_pct ?? 0,
+      avgCheck: score.avg_check ?? 0,
+      guestsHr,
+      ppa: score.ppa ?? (guestsHr > 0 ? roundTo(salesHr / guestsHr, 2) : 0),
+    };
+  });
+
+  return buildCohortDataset(rows);
+}
+
+function mockRowsToCohortDataset(rows: MockServerSeed[]): CohortDataset {
+  return buildCohortDataset(
+    rows.map((row) => ({
+      name: row.name,
+      salesHr: row.salesHr,
+      tipsHr: row.tipsHr,
+      tipPct: row.tipPct,
+      avgCheck: row.avgCheck,
+      guestsHr: row.guestsHr,
+      ppa: row.guestsHr > 0 ? roundTo(row.salesHr / row.guestsHr, 2) : 0,
+    }))
+  );
+}
+
 function parseToastCSV(csvText: string): ServerScore[] {
   const parseResult = Papa.parse<ToastCSVRow>(csvText, {
     header: true,
@@ -94,7 +225,7 @@ function parseToastCSV(csvText: string): ServerScore[] {
     console.error('CSV parse errors:', parseResult.errors);
   }
 
-  const servers: ServerScore[] = [];
+  const parsedRows: ServerScore[] = [];
 
   for (const row of parseResult.data) {
     // Try to find server name from various possible column names
@@ -119,53 +250,23 @@ function parseToastCSV(csvText: string): ServerScore[] {
     // Use direct avg check from CSV if available, otherwise calculate from sales/checks
     const avgCheck = avgCheckDirect ?? (checks && checks > 0 && netSales ? netSales / checks : null);
     const guestsHr = hours && hours > 0 && guests ? guests / hours : null;
+    const ppa = guests && guests > 0 && netSales ? netSales / guests : null;
 
-    // Calculate composite score (0-100 scale based on multiple factors)
-    // Higher sales/hr, tips/hr, and tip% = higher score
-    let score = 50; // Base score
-
-    if (salesHr) {
-      // Sales per hour contributes up to 30 points
-      score += Math.min(30, (salesHr / 300) * 30);
-    }
-    if (tipsHr) {
-      // Tips per hour contributes up to 30 points
-      score += Math.min(30, (tipsHr / 50) * 30);
-    }
-    if (tipPct) {
-      // Tip percentage contributes up to 20 points
-      score += Math.min(20, (tipPct / 25) * 20);
-    }
-    if (avgCheck) {
-      // Average check contributes up to 20 points
-      score += Math.min(20, (avgCheck / 70) * 20);
-    }
-
-    servers.push({
+    parsedRows.push({
       server_name: name.trim(),
-      score: Math.round(score),
+      // Final cohort-relative grading is calculated after the data is split into
+      // role-specific cohorts so servers are only compared with like peers.
+      score: 75,
       sales_hr: salesHr ? Math.round(salesHr * 100) / 100 : null,
       tips_hr: tipsHr ? Math.round(tipsHr * 100) / 100 : null,
       tip_pct: tipPct ? Math.round(tipPct * 10) / 10 : null,
       avg_check: avgCheck ? Math.round(avgCheck * 100) / 100 : null,
       guests_hr: guestsHr ? Math.round(guestsHr * 10) / 10 : null,
+      ppa: ppa ? Math.round(ppa * 100) / 100 : null,
     });
   }
 
-  // Sort by score descending
-  return servers.sort((a, b) => b.score - a.score);
-}
-
-function serverScoreToServerData(scores: ServerScore[]): ServerData[] {
-  return scores.map((s) => ({
-    name: s.server_name,
-    score: s.score,
-    salesHr: s.sales_hr ?? 0,
-    tipsHr: s.tips_hr ?? 0,
-    tipPct: s.tip_pct ?? 0,
-    avgCheck: s.avg_check ?? 0,
-    guestsHr: s.guests_hr ?? 0,
-  }));
+  return parsedRows.sort((a, b) => (b.sales_hr ?? 0) - (a.sales_hr ?? 0));
 }
 
 /* ─────────────────── Page ─────────────────── */
@@ -174,6 +275,8 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(todayISO);
   const [servers, setServers] = useState<ServerData[]>([]);
   const [bartenders, setBartenders] = useState<ServerData[]>([]);
+  const [cohortAverages, setCohortAverages] = useState<ServerData>(EMPTY_COHORT_AVERAGES);
+  const [bartenderCohortAverages, setBartenderCohortAverages] = useState<ServerData>(EMPTY_COHORT_AVERAGES);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -197,19 +300,34 @@ export default function DashboardPage() {
         
         console.log('[Dashboard] Servers:', serverScores.length, 'Bartenders:', bartenderScores.length);
         
-        setServers(serverScoreToServerData(serverScores));
-        setBartenders(serverScoreToServerData(bartenderScores));
+        const serverDataset = scoreRowsToCohortDataset(serverScores);
+        const bartenderDataset = scoreRowsToCohortDataset(bartenderScores);
+
+        setServers(serverDataset.servers);
+        setBartenders(bartenderDataset.servers);
+        setCohortAverages(serverDataset.cohortAverages);
+        setBartenderCohortAverages(bartenderDataset.cohortAverages);
         } else {
           console.log('[Dashboard] No data found, using mock data');
           // Fallback to mock data when no CSV has been uploaded
-          setServers(mockServers);
-          setBartenders(mockBartenders);
+          const serverDataset = mockRowsToCohortDataset(mockServers);
+          const bartenderDataset = mockRowsToCohortDataset(mockBartenders);
+
+          setServers(serverDataset.servers);
+          setBartenders(bartenderDataset.servers);
+          setCohortAverages(serverDataset.cohortAverages);
+          setBartenderCohortAverages(bartenderDataset.cohortAverages);
         }
     } catch (err) {
       console.error('[Dashboard] Error loading data:', err);
       // Fallback to mock data on error
-      setServers(mockServers);
-      setBartenders(mockBartenders);
+      const serverDataset = mockRowsToCohortDataset(mockServers);
+      const bartenderDataset = mockRowsToCohortDataset(mockBartenders);
+
+      setServers(serverDataset.servers);
+      setBartenders(bartenderDataset.servers);
+      setCohortAverages(serverDataset.cohortAverages);
+      setBartenderCohortAverages(bartenderDataset.cohortAverages);
     } finally {
       setIsLoading(false);
     }
@@ -262,7 +380,7 @@ export default function DashboardPage() {
       const message = err instanceof Error ? err.message : 'Failed to process CSV file';
       setUploadError(message);
     }
-  }, [selectedDate]);
+  }, [selectedDate, loadData]);
 
   return (
     <div className="flex min-h-screen w-full">
@@ -293,6 +411,8 @@ export default function DashboardPage() {
         <Dashboard
           servers={servers}
           bartenders={bartenders}
+          cohortAverages={cohortAverages}
+          bartenderCohortAverages={bartenderCohortAverages}
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
           hasData={servers.length > 0 || bartenders.length > 0}

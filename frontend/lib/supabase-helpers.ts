@@ -10,6 +10,7 @@ export interface ServerScore {
   tip_pct: number | null
   avg_check: number | null
   guests_hr: number | null
+  ppa: number | null
 }
 
 /* ─────────────────── Helpers ─────────────────── */
@@ -49,6 +50,7 @@ export async function saveUpload(date: string, servers: ServerScore[]) {
     tip_pct: s.tip_pct,
     avg_check: s.avg_check,
     guests_hr: s.guests_hr,
+    ppa: s.ppa,
   }))
 
   const { error: scoresError } = await supabase

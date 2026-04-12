@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS server_scores (
   tip_pct     NUMERIC,
   avg_check   NUMERIC,
   guests_hr   NUMERIC,
+  ppa         NUMERIC,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
