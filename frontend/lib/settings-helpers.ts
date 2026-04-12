@@ -768,6 +768,7 @@ async function testApiKey(key: AIProviderKey): Promise<{ success: boolean; error
 async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${key.api_key}`,
+    'Content-Type': 'application/json',
   };
 
   if (key.organization_id) {
@@ -775,10 +776,17 @@ async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; er
   }
 
   try {
-    // Make a lightweight models list request
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
+    // Test with an actual completion call to verify the model works
+    const model = key.default_model || 'gpt-3.5-turbo';
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers,
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 5,
+        temperature: 0.1,
+      }),
     });
 
     if (response.status === 401) {
@@ -787,6 +795,15 @@ async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; er
 
     if (response.status === 429) {
       return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (response.status === 404) {
+      const errorData = await response.json().catch(() => null);
+      const modelError = errorData?.error?.message || '';
+      if (modelError.includes('model') || modelError.includes('does not exist')) {
+        return { success: false, error: `Model "${model}" not available. Please select a different model in settings.` };
+      }
+      return { success: false, error: `Model error: ${modelError}` };
     }
 
     if (!response.ok) {
@@ -795,7 +812,7 @@ async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; er
       return { success: false, error: errorMsg };
     }
 
-    // Successfully authenticated
+    // Successfully generated content
     return { success: true };
   } catch (err) {
     return { success: false, error: 'Network error. Please check your connection and try again.' };
@@ -804,13 +821,21 @@ async function testOpenAIKey(key: AIProviderKey): Promise<{ success: boolean; er
 
 async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
   try {
-    // Make a lightweight request to list models
-    const response = await fetch('https://api.anthropic.com/v1/models', {
-      method: 'GET',
+    // Test with an actual message call to verify the model works
+    const model = key.default_model || 'claude-3-haiku-20240307';
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
         'x-api-key': key.api_key,
         'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        model,
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Hi' }],
+        temperature: 0.1,
+      }),
     });
 
     if (response.status === 401) {
@@ -819,6 +844,15 @@ async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean;
 
     if (response.status === 429) {
       return { success: false, error: 'Rate limit exceeded. Please wait a moment and try again.' };
+    }
+
+    if (response.status === 404) {
+      const errorData = await response.json().catch(() => null);
+      const modelError = errorData?.error?.message || '';
+      if (modelError.includes('model') || modelError.includes('not found')) {
+        return { success: false, error: `Model "${model}" not available. Please select a different model in settings.` };
+      }
+      return { success: false, error: `Model error: ${modelError}` };
     }
 
     if (!response.ok) {
@@ -835,14 +869,40 @@ async function testAnthropicKey(key: AIProviderKey): Promise<{ success: boolean;
 
 async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; error?: string }> {
   try {
-    // Test with a simple models list request
+    // Map model names to working API names
+    const modelMap: Record<string, string> = {
+      'gemini-pro': 'gemini-pro',
+      'gemini-1.0-pro': 'gemini-pro',
+      'gemini-1.0-pro-latest': 'gemini-1.0-pro-latest',
+      'gemini-1.5-flash': 'gemini-1.5-flash-001',
+      'gemini-1.5-flash-latest': 'gemini-1.5-flash-001',
+      'gemini-1.5-pro': 'gemini-1.5-pro-001',
+      'gemini-1.5-pro-latest': 'gemini-1.5-pro-001',
+    };
+
+    const rawModel = key.default_model || 'gemini-pro';
+    const modelName = modelMap[rawModel] || 'gemini-pro';
+
+    // Test with an actual generateContent call to verify the model works
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models?key=${key.api_key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key.api_key}`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: 'Hello' }],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 10,
+            temperature: 0.1,
+          },
+        }),
       }
     );
 
@@ -852,6 +912,15 @@ async function testGoogleKey(key: AIProviderKey): Promise<{ success: boolean; er
         return { success: false, error: 'Invalid API key. Please check your key and try again.' };
       }
       return { success: false, error: errorData?.error?.message || 'API key validation failed.' };
+    }
+
+    if (response.status === 404) {
+      const errorData = await response.json().catch(() => null);
+      const modelError = errorData?.error?.message || '';
+      if (modelError.includes('not found') || modelError.includes('is not found')) {
+        return { success: false, error: `Model "${rawModel}" (${modelName}) not found or not available. Please select a different model in settings.` };
+      }
+      return { success: false, error: `Model error: ${modelError}` };
     }
 
     if (response.status === 429) {
