@@ -531,6 +531,12 @@ export async function createAIProviderKey(
 ): Promise<CreateAIProviderKeyResult> {
   const metadata = AI_PROVIDER_METADATA[input.provider];
 
+  // Get current user
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return { success: false, error: 'You must be logged in to add an API key.' };
+  }
+
   // Extract last 4 characters of key for display (safely)
   const keyLastFour = input.api_key.length > 4
     ? `...${input.api_key.slice(-4)}`
@@ -539,6 +545,7 @@ export async function createAIProviderKey(
   const { data, error } = await supabase
     .from('ai_provider_keys')
     .insert({
+      user_id: userData.user.id,
       provider: input.provider,
       provider_name: metadata.name,
       api_key: input.api_key,
@@ -563,6 +570,8 @@ export async function createAIProviderKey(
       errorMessage = 'Database table not found. Please run the SQL migration to create the ai_provider_keys table.';
     } else if (error.code === '42501') {
       errorMessage = 'Permission denied. Please check your Supabase RLS policies.';
+    } else if (error.code === '23505') {
+      errorMessage = 'You already have a default API key. Please uncheck "Set as default" or remove your existing default key first.';
     } else if (error.code === '23514' || error.code === '23502') {
       errorMessage = `Validation failed: ${error.message}`;
     } else if (error.message) {
