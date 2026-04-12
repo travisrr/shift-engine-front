@@ -343,8 +343,8 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  // Use versioned model names directly - these are the stable API names
-  const modelName = providerKey.default_model || 'gemini-1.5-flash-001';
+  // Google model names - use the stable names
+  const modelName = providerKey.default_model || 'gemini-1.5-flash';
 
   console.log('Calling Google API with model:', modelName);
 
