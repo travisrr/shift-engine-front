@@ -343,17 +343,18 @@ async function generateWithGoogle(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  // Google model names - use -latest suffix for latest versions
+  // Use stable model names directly - the -latest suffix doesn't work with v1beta API
   const modelMap: Record<string, string> = {
-    'gemini-1.5-flash': 'gemini-1.5-flash-latest',
-    'gemini-1.5-pro': 'gemini-1.5-pro-latest',
-    'gemini-1.0-pro': 'gemini-1.0-pro-latest',
-    'gemini-pro': 'gemini-1.0-pro-latest',
-    'gemini-ultra': 'gemini-1.0-ultra-latest',
+    'gemini-1.5-flash-latest': 'gemini-1.5-flash',
+    'gemini-1.5-pro-latest': 'gemini-1.5-pro',
+    'gemini-1.0-pro-latest': 'gemini-1.0-pro',
+    'gemini-pro': 'gemini-1.0-pro',
+    'gemini-ultra': 'gemini-1.0-pro',
   };
 
   const rawModel = providerKey.default_model || 'gemini-1.5-flash';
-  const modelName = modelMap[rawModel] || rawModel;
+  // Strip -latest suffix if present, use stable model name
+  const modelName = modelMap[rawModel] || rawModel.replace('-latest', '');
 
   console.log('Calling Google API with model:', modelName);
 
