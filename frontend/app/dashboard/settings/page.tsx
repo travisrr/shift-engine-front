@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot, HelpCircle, Users } from 'lucide-react';
+import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot, HelpCircle, Users, ShieldCheck, RefreshCw } from 'lucide-react';
 import Sidebar from '../../components/Sidebar';
 import {
   getCompanySettings,
@@ -1018,9 +1018,9 @@ export default function SettingsPage() {
                                 onClick={() => handleValidateKey(key.id)}
                                 disabled={isValidating}
                                 className="text-gray-400 hover:text-blue-600 transition-colors p-1.5"
-                                title="Validate key"
+                                title="Test API key"
                               >
-                                {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertCircle className="h-4 w-4" />}
+                                {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                               </button>
                               <button
                                 onClick={() => handleEditKey(key)}
