@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, Wand2, Copy, Check, Calendar, X } from 'lucide-react';
+import { MessageSquare, Wand2, Copy, Check, Calendar, X, Settings, Sparkles } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
+import { getAISettings, type AISettings } from '@/lib/settings-helpers';
 
 // Lazy Supabase client to avoid build-time errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,10 +46,32 @@ export default function AIReviewBuilderPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Fetch staff data on mount
+  // AI Settings from database
+  const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
+  const [aiSettingsLoading, setAiSettingsLoading] = useState(true);
+
+  // Fetch staff and AI settings on mount
   useEffect(() => {
     fetchStaff();
+    fetchAISettings();
   }, []);
+
+  async function fetchAISettings() {
+    try {
+      setAiSettingsLoading(true);
+      const settings = await getAISettings();
+      setAiSettings(settings);
+      // Default the tone dropdown to the settings value if available
+      if (settings?.review_tone) {
+        // Use the settings tone directly since dropdown values match database schema
+        setReviewTone(settings.review_tone);
+      }
+    } catch (err) {
+      console.error('Error fetching AI settings:', err);
+    } finally {
+      setAiSettingsLoading(false);
+    }
+  }
 
   async function fetchStaff() {
     try {
@@ -98,17 +121,19 @@ export default function AIReviewBuilderPage() {
       return;
     }
 
-    // Placeholder review content
-    const review = generatePlaceholderReview(employee, timePeriod, reviewTone);
+    // Generate review using AI settings
+    const review = generateReviewWithSettings(employee, timePeriod, reviewTone, aiSettings);
     setGeneratedReview(review);
     setIsGenerating(false);
   }
 
-  function generatePlaceholderReview(
+  function generateReviewWithSettings(
     employee: WaitStaff,
     period: string,
-    tone: string
+    tone: string,
+    settings: AISettings | null
   ): string {
+    // Build period text
     let periodText: string;
     if (isCustomDateRange && customStartDate && customEndDate) {
       const start = new Date(customStartDate).toLocaleDateString('en-US', {
@@ -133,27 +158,71 @@ export default function AIReviewBuilderPage() {
               : 'the past year';
     }
 
+    // Apply AI settings if available
+    const instructions = settings?.review_instructions || '';
+    const focusAreas = settings?.focus_areas || ['customer service', 'teamwork', 'efficiency'];
+    const maxLength = settings?.max_review_length || 500;
+    const includeSuggestions = settings?.include_suggestions !== false;
+
+    // Determine tone based on settings and selection
+    const effectiveTone = tone || settings?.review_tone || 'professional';
+
     const toneOpening =
-      tone === 'professional'
+      effectiveTone === 'professional' || effectiveTone === 'direct'
         ? 'It is my pleasure to recommend'
-        : tone === 'enthusiastic'
+        : effectiveTone === 'friendly'
           ? 'I am thrilled to recommend'
           : 'I would like to recognize';
 
     const toneClosing =
-      tone === 'professional'
+      effectiveTone === 'professional' || effectiveTone === 'direct'
         ? 'an asset to our team'
-        : tone === 'enthusiastic'
+        : effectiveTone === 'friendly'
           ? 'truly exceptional'
           : 'a valued member of our staff';
 
-    return `${toneOpening} ${employee.full_name} for their outstanding performance as a ${employee.job_title} during ${periodText}.
+    // Build focus areas text based on settings
+    const focusAreasText = focusAreas
+      .map((area) => {
+        const areaDescriptions: Record<string, string> = {
+          upsell_metrics: 'demonstrating strong upselling skills and contributing to revenue growth',
+          table_turn_speed: 'maintaining efficient table turn times while ensuring quality service',
+          guest_satisfaction: 'consistently delivering exceptional guest experiences',
+          teamwork: 'collaborating effectively with team members',
+          punctuality: 'maintaining excellent attendance and punctuality',
+          menu_knowledge: 'showcasing comprehensive menu knowledge and recommendations',
+        };
+        return areaDescriptions[area] || area.replace(/_/g, ' ');
+      })
+      .join(', ');
 
-${employee.full_name} has consistently demonstrated excellence in customer service, maintaining a positive attitude even during the busiest shifts. Their attention to detail and ability to work efficiently under pressure have significantly contributed to our restaurant's success.
+    // Generate base review content
+    let reviewContent = `${toneOpening} ${employee.full_name} for their outstanding performance as a ${employee.job_title} during ${periodText}.
 
-Team members frequently praise ${employee.full_name.split(' ')[0]} for their willingness to help others and their collaborative approach to problem-solving. Customers regularly provide positive feedback about their dining experience when served by ${employee.full_name.split(' ')[0]}.
+${employee.full_name} has consistently demonstrated excellence in the following areas: ${focusAreasText}. Their dedication and professionalism have made a significant impact on our operations.`;
 
-I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confident they will continue to excel in their role.`;
+    // Add instruction-guided content if instructions exist
+    if (instructions) {
+      reviewContent += `\n\nFollowing our review guidelines: ${instructions}`;
+    }
+
+    // Add team and customer feedback section
+    reviewContent += `\n\nTeam members frequently praise ${employee.full_name.split(' ')[0]} for their willingness to help others and their collaborative approach to problem-solving. Customers regularly provide positive feedback about their dining experience when served by ${employee.full_name.split(' ')[0]}.`;
+
+    // Add suggestions section if enabled
+    if (includeSuggestions) {
+      reviewContent += `\n\nAreas for continued growth include further developing leadership skills and exploring opportunities to mentor newer team members.`;
+    }
+
+    // Add closing endorsement
+    reviewContent += `\n\nI wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confident they will continue to excel in their role.`;
+
+    // Respect max length setting
+    if (reviewContent.length > maxLength) {
+      reviewContent = reviewContent.substring(0, maxLength - 3) + '...';
+    }
+
+    return reviewContent;
   }
 
   function handleCopyReview() {
@@ -171,12 +240,45 @@ I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confiden
         <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
           {/* ── Header ── */}
           <div className="mb-8">
-            <h1 className="text-[22px] font-semibold tracking-tight text-black">
-              AI Review Builder
-            </h1>
-            <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
-              Generate performance reviews for your team using AI-powered insights.
-            </p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-[22px] font-semibold tracking-tight text-black">
+                  AI Review Builder
+                </h1>
+                <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
+                  Generate performance reviews for your team using AI-powered insights.
+                </p>
+              </div>
+              <a
+                href="/dashboard/settings?tab=ai"
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-600 transition-colors hover:bg-zinc-50 hover:text-gray-800"
+              >
+                <Settings className="h-3.5 w-3.5" strokeWidth={1.75} />
+                AI Settings
+              </a>
+            </div>
+            {aiSettingsLoading ? (
+              <div className="mt-3 flex items-center gap-2 text-[12px] text-gray-400">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></div>
+                Loading AI instructions...
+              </div>
+            ) : aiSettings ? (
+              <div className="mt-3 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2">
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600" strokeWidth={1.75} />
+                <span className="text-[12px] text-emerald-700">
+                  Using your custom AI instructions
+                  {aiSettings.review_tone && (
+                    <span className="text-emerald-600"> • Tone: {aiSettings.review_tone}</span>
+                  )}
+                  {aiSettings.focus_areas && aiSettings.focus_areas.length > 0 && (
+                    <span className="text-emerald-600">
+                      {' '}
+                      • Focus: {aiSettings.focus_areas.length} area{aiSettings.focus_areas.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {/* ── Main Content ── */}
@@ -334,6 +436,11 @@ I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confiden
                       className="mb-1.5 block text-[12px] font-medium text-gray-700"
                     >
                       Review Tone
+                      {aiSettings?.review_tone && (
+                        <span className="ml-1 text-[11px] font-normal text-gray-400">
+                          (default from settings)
+                        </span>
+                      )}
                     </label>
                     <select
                       id="review-tone"
@@ -342,9 +449,15 @@ I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confiden
                       className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400"
                     >
                       <option value="professional">Professional</option>
-                      <option value="enthusiastic">Enthusiastic</option>
-                      <option value="balanced">Balanced</option>
+                      <option value="friendly">Friendly</option>
+                      <option value="direct">Direct</option>
+                      <option value="detailed">Detailed</option>
                     </select>
+                    {aiSettings?.review_instructions && (
+                      <p className="mt-1.5 text-[11px] text-gray-400">
+                        AI instructions from settings will also be applied
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
