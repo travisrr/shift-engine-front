@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, Wand2, Copy, Check } from 'lucide-react';
+import { MessageSquare, Wand2, Copy, Check, Calendar } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
 
 // Lazy Supabase client to avoid build-time errors
@@ -37,6 +37,8 @@ export default function AIReviewBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [timePeriod, setTimePeriod] = useState<string>('last_30_days');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [reviewTone, setReviewTone] = useState<string>('professional');
   const [generatedReview, setGeneratedReview] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -106,14 +108,29 @@ export default function AIReviewBuilderPage() {
     period: string,
     tone: string
   ): string {
-    const periodText =
-      period === 'last_30_days'
-        ? 'the past 30 days'
-        : period === 'last_quarter'
-          ? 'the last quarter'
-          : period === 'last_6_months'
-            ? 'the last 6 months'
-            : 'the past year';
+    let periodText: string;
+    if (period === 'custom' && customStartDate && customEndDate) {
+      const start = new Date(customStartDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      const end = new Date(customEndDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      periodText = `the period from ${start} to ${end}`;
+    } else {
+      periodText =
+        period === 'last_30_days'
+          ? 'the past 30 days'
+          : period === 'last_quarter'
+            ? 'the last quarter'
+            : period === 'last_6_months'
+              ? 'the last 6 months'
+              : 'the past year';
+    }
 
     const toneOpening =
       tone === 'professional'
@@ -211,18 +228,69 @@ I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confiden
                     >
                       Time Period
                     </label>
-                    <select
-                      id="time-period"
-                      value={timePeriod}
-                      onChange={(e) => setTimePeriod(e.target.value)}
-                      className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400"
-                    >
-                      <option value="last_30_days">Last 30 Days</option>
-                      <option value="last_quarter">Last Quarter</option>
-                      <option value="last_6_months">Last 6 Months</option>
-                      <option value="last_year">Last Year</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        id="time-period"
+                        value={timePeriod}
+                        onChange={(e) => setTimePeriod(e.target.value)}
+                        className="w-full rounded-md border border-gray-200 px-3 py-2 pr-10 text-[13px] text-black outline-none transition-colors focus:border-gray-400"
+                      >
+                        <option value="last_30_days">Last 30 Days</option>
+                        <option value="last_quarter">Last Quarter</option>
+                        <option value="last_6_months">Last 6 Months</option>
+                        <option value="last_year">Last Year</option>
+                        <option value="custom">Custom Date Range...</option>
+                      </select>
+                      <Calendar
+                        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                        strokeWidth={1.75}
+                      />
+                    </div>
                   </div>
+
+                  {/* Custom Date Range Inputs */}
+                  {timePeriod === 'custom' && (
+                    <div className="rounded-md border border-gray-200 bg-zinc-50/50 p-3">
+                      <p className="mb-3 text-[12px] font-medium text-gray-700">
+                        Select date range
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label
+                            htmlFor="start-date"
+                            className="mb-1 block text-[11px] font-medium text-gray-600"
+                          >
+                            Start Date
+                          </label>
+                          <input
+                            type="date"
+                            id="start-date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="end-date"
+                            className="mb-1 block text-[11px] font-medium text-gray-600"
+                          >
+                            End Date
+                          </label>
+                          <input
+                            type="date"
+                            id="end-date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400"
+                          />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[11px] text-gray-400">
+                        Tip: Use this for custom week ranges (e.g., Wed-Tue)
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label
@@ -248,7 +316,11 @@ I wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confiden
               {/* Generate Button */}
               <button
                 onClick={handleGenerateReview}
-                disabled={!selectedEmployee || isGenerating}
+                disabled={
+                  !selectedEmployee ||
+                  isGenerating ||
+                  (timePeriod === 'custom' && (!customStartDate || !customEndDate))
+                }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-black px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
               >
                 {isGenerating ? (
