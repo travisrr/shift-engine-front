@@ -569,7 +569,7 @@ export async function createAIProviderKey(
     if (error.code === '42P01') {
       errorMessage = 'Database table not found. Please run the SQL migration to create the ai_provider_keys table.';
     } else if (error.code === '42501') {
-      errorMessage = 'Permission denied. Please check your Supabase RLS policies.';
+      errorMessage = 'Permission denied. Your session may have expired. Please try logging out and back in.';
     } else if (error.code === '23505') {
       errorMessage = 'You already have a default API key. Please uncheck "Set as default" or remove your existing default key first.';
     } else if (error.code === '23514' || error.code === '23502') {
