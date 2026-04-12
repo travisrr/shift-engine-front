@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot, HelpCircle, Users } from 'lucide-react';
+import { User, MapPin, Sparkles, CreditCard, Loader2, Plus, Trash2, Edit2, Check, X, Key, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2, AlertTriangle, Bot, HelpCircle } from 'lucide-react';
 import Sidebar from '../../components/Sidebar';
 import {
   getCompanySettings,
@@ -19,22 +19,15 @@ import {
   setDefaultAIProviderKey,
   validateAIProviderKey,
   AI_PROVIDER_METADATA,
-  getAllowedUsers,
-  createAllowedUser,
-  updateAllowedUser,
-  deleteAllowedUser,
-  ALLOWED_USER_ROLES,
   type CompanySettings,
   type Location,
   type AISettings,
   type AIProviderKeyPublic,
   type AIProvider,
   type CreateAIProviderKeyResult,
-  type AllowedUser,
-  type AllowedUserRole,
 } from '../../../lib/settings-helpers';
 
-type Tab = 'general' | 'locations' | 'ai' | 'ai-keys' | 'billing' | 'users';
+type Tab = 'general' | 'locations' | 'ai' | 'ai-keys' | 'billing';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('general');
@@ -47,7 +40,6 @@ export default function SettingsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [aiSettings, setAISettings] = useState<AISettings | null>(null);
   const [aiProviderKeys, setAiProviderKeys] = useState<AIProviderKeyPublic[]>([]);
-  const [allowedUsers, setAllowedUsers] = useState<AllowedUser[]>([]);
 
   // Form states for General tab
   const [companyName, setCompanyName] = useState('');
@@ -78,21 +70,12 @@ export default function SettingsPage() {
   const [makeDefault, setMakeDefault] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
 
-  // Users tab states
-  const [isAddingUser, setIsAddingUser] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<AllowedUserRole>('Manager');
-  const [newUserPhone, setNewUserPhone] = useState('');
-
   const tabs = [
     { id: 'general' as Tab, label: 'General', icon: User },
     { id: 'locations' as Tab, label: 'Locations', icon: MapPin },
     { id: 'ai' as Tab, label: 'AI Assistant', icon: Sparkles },
     { id: 'ai-keys' as Tab, label: 'AI Keys', icon: Key },
     { id: 'billing' as Tab, label: 'Billing', icon: CreditCard },
-    { id: 'users' as Tab, label: 'Users', icon: Users },
   ];
 
   // Load all settings on mount
@@ -103,19 +86,17 @@ export default function SettingsPage() {
   async function loadSettings() {
     setIsLoading(true);
     try {
-      const [company, locs, ai, keys, users] = await Promise.all([
+      const [company, locs, ai, keys] = await Promise.all([
         getCompanySettings(),
         getLocations(),
         getAISettings(),
         getAIProviderKeys(),
-        getAllowedUsers(),
       ]);
 
       setCompanySettings(company);
       setLocations(locs);
       setAISettings(ai);
       setAiProviderKeys(keys);
-      setAllowedUsers(users);
 
       // Initialize form states
       if (company) {
@@ -346,61 +327,6 @@ export default function SettingsPage() {
       setSaveMessage(`Validation failed: ${result.error}`);
     }
     setTimeout(() => setSaveMessage(null), 5000);
-  }
-
-  // Users handlers
-  function resetUserForm() {
-    setNewUserName('');
-    setNewUserEmail('');
-    setNewUserRole('Manager');
-    setNewUserPhone('');
-    setEditingUserId(null);
-  }
-
-  async function handleAddUser() {
-    if (!newUserName.trim() || !newUserEmail.trim()) return;
-
-    const newUser = await createAllowedUser({
-      full_name: newUserName.trim(),
-      email: newUserEmail.trim(),
-      role: newUserRole,
-      phone: newUserPhone.trim() || null,
-      is_active: true,
-    });
-
-    if (newUser) {
-      setAllowedUsers([...allowedUsers, newUser]);
-      resetUserForm();
-      setIsAddingUser(false);
-      setSaveMessage('User added successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } else {
-      setSaveMessage('Failed to add user. Please try again.');
-    }
-  }
-
-  async function handleUpdateUser(id: string, updates: Partial<AllowedUser>) {
-    const updated = await updateAllowedUser(id, updates);
-    if (updated) {
-      setAllowedUsers(allowedUsers.map(u => u.id === id ? updated : u));
-      setEditingUserId(null);
-      setSaveMessage('User updated successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } else {
-      setSaveMessage('Failed to update user. Please try again.');
-    }
-  }
-
-  async function handleDeleteUser(id: string) {
-    if (!confirm('Are you sure you want to remove this user?')) return;
-    const success = await deleteAllowedUser(id);
-    if (success) {
-      setAllowedUsers(allowedUsers.filter(u => u.id !== id));
-      setSaveMessage('User removed successfully');
-      setTimeout(() => setSaveMessage(null), 3000);
-    } else {
-      setSaveMessage('Failed to remove user. Please try again.');
-    }
   }
 
   function getProviderBadgeColor(provider: AIProvider): string {
@@ -1122,206 +1048,6 @@ export default function SettingsPage() {
                     <button className="text-[13px] text-red-600 hover:text-red-700 transition-colors">
                       Cancel Subscription
                     </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 6: Users (Allowed Users) */}
-              {activeTab === 'users' && (
-                <div className="bg-white border border-gray-200 rounded-md p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-[16px] font-semibold text-black">Allowed Users</h2>
-                      <p className="text-[13px] text-gray-500 mt-1">
-                        Manage who can access and use this software (General Managers, Assistant GMs, etc.)
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setIsAddingUser(true)}
-                      className="border border-gray-200 bg-white text-gray-700 hover:bg-zinc-50 px-4 py-2 rounded-md text-[13px] font-medium transition-colors flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add User
-                    </button>
-                  </div>
-
-                  {/* Add new user form */}
-                  {isAddingUser && (
-                    <div className="mb-4 rounded-md border border-gray-200 p-4 bg-zinc-50">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="mb-1 block text-[12px] font-medium text-gray-700">
-                            Full Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={newUserName}
-                            onChange={(e) => setNewUserName(e.target.value)}
-                            placeholder="e.g., John Smith"
-                            className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-[12px] font-medium text-gray-700">
-                            Email <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="email"
-                            value={newUserEmail}
-                            onChange={(e) => setNewUserEmail(e.target.value)}
-                            placeholder="e.g., john@restaurant.com"
-                            className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-[12px] font-medium text-gray-700">
-                            Role
-                          </label>
-                          <select
-                            value={newUserRole}
-                            onChange={(e) => setNewUserRole(e.target.value as AllowedUserRole)}
-                            className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0"
-                          >
-                            {ALLOWED_USER_ROLES.map((role) => (
-                              <option key={role} value={role}>{role}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-[12px] font-medium text-gray-700">
-                            Phone (Optional)
-                          </label>
-                          <input
-                            type="tel"
-                            value={newUserPhone}
-                            onChange={(e) => setNewUserPhone(e.target.value)}
-                            placeholder="e.g., (555) 123-4567"
-                            className="w-full rounded-md border border-gray-200 px-3 py-2 text-[13px] text-black outline-none transition-colors focus:border-gray-400 focus:ring-0"
-                          />
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            onClick={handleAddUser}
-                            disabled={!newUserName.trim() || !newUserEmail.trim()}
-                            className="bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors flex items-center gap-1"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsAddingUser(false);
-                              resetUserForm();
-                            }}
-                            className="border border-gray-200 bg-white text-gray-700 hover:bg-zinc-50 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors flex items-center gap-1"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    {allowedUsers.length === 0 ? (
-                      <p className="text-[13px] text-gray-500 py-8 text-center">
-                        No users yet. Click &quot;Add User&quot; to add General Managers, Assistant GMs, or other staff who will use the software.
-                      </p>
-                    ) : (
-                      allowedUsers.map((user) => (
-                        <div
-                          key={user.id}
-                          className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-3"
-                        >
-                          {editingUserId === user.id ? (
-                            <div className="flex-1 space-y-2">
-                              <input
-                                type="text"
-                                defaultValue={user.full_name}
-                                onBlur={(e) => handleUpdateUser(user.id, { full_name: e.target.value })}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateUser(user.id, { full_name: e.currentTarget.value });
-                                  }
-                                }}
-                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-[13px] text-black outline-none focus:border-gray-400"
-                                autoFocus
-                              />
-                              <input
-                                type="email"
-                                defaultValue={user.email}
-                                onBlur={(e) => handleUpdateUser(user.id, { email: e.target.value })}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateUser(user.id, { email: e.currentTarget.value });
-                                  }
-                                }}
-                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-[12px] text-gray-600 outline-none focus:border-gray-400"
-                              />
-                              <select
-                                defaultValue={user.role}
-                                onChange={(e) => handleUpdateUser(user.id, { role: e.target.value as AllowedUserRole })}
-                                className="w-full rounded-md border border-gray-200 px-2 py-1 text-[12px] text-gray-600 outline-none focus:border-gray-400"
-                              >
-                                {ALLOWED_USER_ROLES.map((role) => (
-                                  <option key={role} value={role}>{role}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : (
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-[13px] font-medium text-black">{user.full_name}</p>
-                                <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
-                                  {user.role}
-                                </span>
-                                {!user.is_active && (
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">
-                                    Inactive
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[12px] text-gray-500">{user.email}</p>
-                              {user.phone && (
-                                <p className="text-[12px] text-gray-400">{user.phone}</p>
-                              )}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 ml-4">
-                            <button
-                              onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}
-                              className="text-gray-400 hover:text-black transition-colors p-1"
-                              title="Edit"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleUpdateUser(user.id, { is_active: !user.is_active })}
-                              className={`transition-colors p-1 ${
-                                user.is_active
-                                  ? 'text-gray-400 hover:text-amber-600'
-                                  : 'text-gray-400 hover:text-emerald-600'
-                              }`}
-                              title={user.is_active ? 'Deactivate' : 'Activate'}
-                            >
-                              {user.is_active ? (
-                                <AlertCircle className="h-4 w-4" />
-                              ) : (
-                                <CheckCircle2 className="h-4 w-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="text-gray-400 hover:text-red-600 transition-colors p-1"
-                              title="Remove"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
                   </div>
                 </div>
               )}
