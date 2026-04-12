@@ -32,7 +32,13 @@ const navItems: NavItem[] = [
       { label: 'Edit Team', href: '/dashboard/wait-staff/edit', icon: UserCog },
     ],
   },
-  { label: 'Reviews', icon: Star, href: '/dashboard/reviews' },
+  {
+    label: 'Reviews',
+    icon: Star,
+    children: [
+      { label: 'Build Review', href: '/dashboard/reviews/build', icon: Star },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -42,7 +48,7 @@ interface SidebarProps {
 export default function Sidebar({ onFileUpload }: SidebarProps) {
   const [collapsed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<string[]>(['Wait Staff']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['Wait Staff', 'Reviews']);
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
 
