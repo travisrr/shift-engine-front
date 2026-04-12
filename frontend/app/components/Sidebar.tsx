@@ -101,16 +101,16 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       `}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 border-b border-gray-200 px-4">
+      <div className="flex h-11 items-center gap-2 border-b border-gray-200 px-3">
         <img
           src="/shift-engine-logo-bw-nobg.webp"
           alt="Shift Engine"
-          className="h-7 w-auto"
+          className="h-6 w-auto"
         />
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-0.5 px-3 pt-4">
+      <nav className="space-y-px px-2 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const hasChildren = item.children && item.children.length > 0;
@@ -123,12 +123,12 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 <button
                   onClick={() => toggleSection(item.label)}
                   className={`
-                    group flex w-full items-center justify-between rounded-md px-2.5 py-[7px]
+                    group flex w-full items-center justify-between rounded-md px-2 py-1.5
                     text-[13px] font-medium transition-colors
                     ${sectionActive ? 'bg-zinc-100 text-black' : 'text-gray-600 hover:bg-zinc-50 hover:text-gray-900'}
                   `}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <Icon
                       className={`h-4 w-4 shrink-0 ${
                         sectionActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-600'
@@ -139,14 +139,14 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                   </div>
                   {!collapsed && (
                     <ChevronRight
-                      className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${
+                      className={`h-3 w-3 shrink-0 text-gray-400 transition-transform duration-200 ${
                         isExpanded ? 'rotate-90' : ''
                       }`}
                     />
                   )}
                 </button>
                 {!collapsed && isExpanded && (
-                  <div className="ml-4 space-y-0.5 border-l border-gray-200 pl-2">
+                  <div className="ml-3 space-y-px border-l border-gray-200 pl-2">
                     {item.children?.map((child) => {
                       const ChildIcon = child.icon;
                       const childActive = isActive(child.href);
@@ -155,7 +155,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                           key={child.href}
                           href={child.href}
                           className={`
-                            group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px]
+                            group flex w-full items-center gap-2 rounded-md px-2 py-1.5
                             text-[13px] font-medium transition-colors
                             ${childActive ? 'bg-zinc-100 text-black' : 'text-gray-500 hover:bg-zinc-50 hover:text-gray-700'}
                           `}
@@ -181,7 +181,7 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
               key={item.label}
               href={item.href || '#'}
               className={`
-                group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px]
+                group flex w-full items-center gap-2 rounded-md px-2 py-1.5
                 text-[13px] font-medium transition-colors
                 ${
                   isActive(item.href)
@@ -204,15 +204,15 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
 
       {/* ── Compact Dropzone ── */}
       {!collapsed && (
-        <div className="px-3 pt-4">
+        <div className="px-2 pt-2">
           <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
             className={`
-              group flex cursor-pointer items-center gap-2.5
-              rounded-md border border-dashed px-2.5 py-2.5
+              group flex cursor-pointer items-center gap-2
+              rounded-md border border-dashed px-2 py-2
               transition-all duration-150
               ${
                 dragActive
@@ -234,11 +234,11 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
             />
             <label
               htmlFor="csv-file-input"
-              className="flex w-full cursor-pointer items-center gap-2.5"
+              className="flex w-full cursor-pointer items-center gap-2"
             >
               <div
                 className={`
-                  flex h-8 w-8 shrink-0 items-center justify-center rounded-md
+                  flex h-7 w-7 shrink-0 items-center justify-center rounded-md
                   transition-colors duration-150
                   ${dragActive ? 'bg-indigo-100' : 'bg-zinc-100 group-hover:bg-zinc-200/70'}
                 `}
@@ -251,11 +251,11 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium text-gray-600">
+                <p className="text-[11px] font-medium text-gray-600">
                   Drop CSV
                 </p>
                 <p className="text-[10px] text-gray-400">
-                  or click to browse
+                  or click
                 </p>
               </div>
             </label>
@@ -267,23 +267,23 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
       <div className="flex-1" />
 
       {/* User profile section */}
-      <div className="border-t border-gray-200 px-3 py-3">
-        <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors hover:bg-zinc-50">
+      <div className="border-t border-gray-200 px-2 py-2">
+        <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-50">
           {/* Avatar */}
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-white">
             M
           </div>
           {!collapsed && (
             <div className="flex flex-1 items-center justify-between">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-black">
+                <p className="truncate text-[12px] font-medium text-black">
                   Manager
                 </p>
-                <p className="truncate text-[11px] text-gray-400">
+                <p className="truncate text-[10px] text-gray-400">
                   admin@shiftengine.io
                 </p>
               </div>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
             </div>
           )}
         </button>
