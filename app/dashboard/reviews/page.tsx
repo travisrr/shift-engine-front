@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, Wand2, Copy, Check, Calendar, X, Settings, Sparkles } from 'lucide-react';
+import { MessageSquare, Wand2, Copy, Check, Calendar, X, Settings, Sparkles, AlertCircle, Key, ExternalLink } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
-import { getAISettings, type AISettings } from '@/lib/settings-helpers';
+import { getAISettings, getDefaultAIProviderKey, type AISettings, type AIProviderKeyPublic } from '@/lib/settings-helpers';
 
 // Lazy Supabase client to avoid build-time errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,10 +50,16 @@ export default function AIReviewBuilderPage() {
   const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
   const [aiSettingsLoading, setAiSettingsLoading] = useState(true);
 
+  // AI Provider Key status
+  const [defaultProviderKey, setDefaultProviderKey] = useState<AIProviderKeyPublic | null>(null);
+  const [providerKeyLoading, setProviderKeyLoading] = useState(true);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   // Fetch staff and AI settings on mount
   useEffect(() => {
     fetchStaff();
     fetchAISettings();
+    fetchProviderKey();
   }, []);
 
   async function fetchAISettings() {
@@ -70,6 +76,18 @@ export default function AIReviewBuilderPage() {
       console.error('Error fetching AI settings:', err);
     } finally {
       setAiSettingsLoading(false);
+    }
+  }
+
+  async function fetchProviderKey() {
+    try {
+      setProviderKeyLoading(true);
+      const key = await getDefaultAIProviderKey();
+      setDefaultProviderKey(key);
+    } catch (err) {
+      console.error('Error fetching provider key:', err);
+    } finally {
+      setProviderKeyLoading(false);
     }
   }
 
@@ -111,9 +129,7 @@ export default function AIReviewBuilderPage() {
     if (!selectedEmployee) return;
 
     setIsGenerating(true);
-
-    // Simulate AI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setGenerationError(null);
 
     const employee = staff.find((s) => s.id === selectedEmployee);
     if (!employee) {
@@ -121,108 +137,40 @@ export default function AIReviewBuilderPage() {
       return;
     }
 
-    // Generate review using AI settings
-    const review = generateReviewWithSettings(employee, timePeriod, reviewTone, aiSettings);
-    setGeneratedReview(review);
-    setIsGenerating(false);
-  }
-
-  function generateReviewWithSettings(
-    employee: WaitStaff,
-    period: string,
-    tone: string,
-    settings: AISettings | null
-  ): string {
-    // Build period text
-    let periodText: string;
-    if (isCustomDateRange && customStartDate && customEndDate) {
-      const start = new Date(customStartDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+    try {
+      const response = await fetch('/api/ai/generate-review', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeId: employee.id,
+          employeeName: employee.full_name,
+          jobTitle: employee.job_title,
+          timePeriod,
+          customDateRange: isCustomDateRange && customStartDate && customEndDate
+            ? { start: customStartDate, end: customEndDate }
+            : undefined,
+          tone: reviewTone,
+        }),
       });
-      const end = new Date(customEndDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      periodText = `the period from ${start} to ${end}`;
-    } else {
-      periodText =
-        period === 'last_30_days'
-          ? 'the past 30 days'
-          : period === 'last_quarter'
-            ? 'the last quarter'
-            : period === 'last_6_months'
-              ? 'the last 6 months'
-              : 'the past year';
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate review');
+      }
+
+      setGeneratedReview(data.review);
+
+      // Refresh provider key to get updated usage count
+      fetchProviderKey();
+    } catch (err) {
+      console.error('Error generating review:', err);
+      setGenerationError(err instanceof Error ? err.message : 'Failed to generate review');
+    } finally {
+      setIsGenerating(false);
     }
-
-    // Apply AI settings if available
-    const instructions = settings?.review_instructions || '';
-    const focusAreas = settings?.focus_areas || ['customer service', 'teamwork', 'efficiency'];
-    const maxLength = settings?.max_review_length || 500;
-    const includeSuggestions = settings?.include_suggestions !== false;
-
-    // Determine tone based on settings and selection
-    const effectiveTone = tone || settings?.review_tone || 'professional';
-
-    const toneOpening =
-      effectiveTone === 'professional' || effectiveTone === 'direct'
-        ? 'It is my pleasure to recommend'
-        : effectiveTone === 'friendly'
-          ? 'I am thrilled to recommend'
-          : 'I would like to recognize';
-
-    const toneClosing =
-      effectiveTone === 'professional' || effectiveTone === 'direct'
-        ? 'an asset to our team'
-        : effectiveTone === 'friendly'
-          ? 'truly exceptional'
-          : 'a valued member of our staff';
-
-    // Build focus areas text based on settings
-    const focusAreasText = focusAreas
-      .map((area) => {
-        const areaDescriptions: Record<string, string> = {
-          upsell_metrics: 'demonstrating strong upselling skills and contributing to revenue growth',
-          table_turn_speed: 'maintaining efficient table turn times while ensuring quality service',
-          guest_satisfaction: 'consistently delivering exceptional guest experiences',
-          teamwork: 'collaborating effectively with team members',
-          punctuality: 'maintaining excellent attendance and punctuality',
-          menu_knowledge: 'showcasing comprehensive menu knowledge and recommendations',
-        };
-        return areaDescriptions[area] || area.replace(/_/g, ' ');
-      })
-      .join(', ');
-
-    // Generate base review content
-    let reviewContent = `${toneOpening} ${employee.full_name} for their outstanding performance as a ${employee.job_title} during ${periodText}.
-
-${employee.full_name} has consistently demonstrated excellence in the following areas: ${focusAreasText}. Their dedication and professionalism have made a significant impact on our operations.`;
-
-    // Add instruction-guided content if instructions exist
-    if (instructions) {
-      reviewContent += `\n\nFollowing our review guidelines: ${instructions}`;
-    }
-
-    // Add team and customer feedback section
-    reviewContent += `\n\nTeam members frequently praise ${employee.full_name.split(' ')[0]} for their willingness to help others and their collaborative approach to problem-solving. Customers regularly provide positive feedback about their dining experience when served by ${employee.full_name.split(' ')[0]}.`;
-
-    // Add suggestions section if enabled
-    if (includeSuggestions) {
-      reviewContent += `\n\nAreas for continued growth include further developing leadership skills and exploring opportunities to mentor newer team members.`;
-    }
-
-    // Add closing endorsement
-    reviewContent += `\n\nI wholeheartedly endorse ${employee.full_name} as ${toneClosing} and am confident they will continue to excel in their role.`;
-
-    // Respect max length setting
-    if (reviewContent.length > maxLength) {
-      reviewContent = reviewContent.substring(0, maxLength - 3) + '...';
-    }
-
-    return reviewContent;
   }
 
   function handleCopyReview() {
@@ -250,28 +198,87 @@ ${employee.full_name} has consistently demonstrated excellence in the following 
                 </p>
               </div>
               <a
-                href="/dashboard/settings?tab=ai"
+                href="/dashboard/settings?tab=ai-keys"
                 className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-600 transition-colors hover:bg-zinc-50 hover:text-gray-800"
               >
                 <Settings className="h-3.5 w-3.5" strokeWidth={1.75} />
                 AI Settings
               </a>
             </div>
-            {aiSettingsLoading ? (
+
+            {/* AI Provider Status */}
+            {providerKeyLoading ? (
               <div className="mt-3 flex items-center gap-2 text-[12px] text-gray-400">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></div>
+                Checking AI provider status...
+              </div>
+            ) : defaultProviderKey ? (
+              <div className={`mt-3 flex items-center gap-2 rounded-md border px-3 py-2 ${
+                defaultProviderKey.validation_status === 'valid'
+                  ? 'border-emerald-200 bg-emerald-50/50'
+                  : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
+                    ? 'border-red-200 bg-red-50/50'
+                    : 'border-amber-200 bg-amber-50/50'
+              }`}>
+                <Sparkles className={`h-3.5 w-3.5 ${
+                  defaultProviderKey.validation_status === 'valid'
+                    ? 'text-emerald-600'
+                    : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
+                      ? 'text-red-600'
+                      : 'text-amber-600'
+                }`} strokeWidth={1.75} />
+                <span className={`text-[12px] ${
+                  defaultProviderKey.validation_status === 'valid'
+                    ? 'text-emerald-700'
+                    : defaultProviderKey.validation_status === 'invalid' || defaultProviderKey.validation_status === 'expired'
+                      ? 'text-red-700'
+                      : 'text-amber-700'
+                }`}>
+                  {defaultProviderKey.validation_status === 'valid'
+                    ? `Connected to ${defaultProviderKey.provider_name} (${defaultProviderKey.key_last_four}) • ${defaultProviderKey.monthly_usage_count} uses this month`
+                    : defaultProviderKey.validation_status === 'invalid'
+                      ? `Your ${defaultProviderKey.provider_name} API key appears to be invalid`
+                      : defaultProviderKey.validation_status === 'expired'
+                        ? `Your ${defaultProviderKey.provider_name} API key has expired`
+                        : `${defaultProviderKey.provider_name} key pending validation`
+                  }
+                </span>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/50 px-3 py-2">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 mt-0.5" strokeWidth={1.75} />
+                <div>
+                  <span className="text-[12px] text-amber-700">
+                    No AI provider configured. Add your API key to generate real AI-powered reviews.
+                  </span>
+                  <a
+                    href="/dashboard/settings?tab=ai-keys"
+                    className="ml-2 inline-flex items-center gap-0.5 text-[12px] font-medium text-amber-800 hover:text-amber-900 hover:underline"
+                  >
+                    <Key className="h-3 w-3" />
+                    Configure API Key
+                    <ExternalLink className="h-3 w-3 ml-0.5" />
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* AI Settings Status */}
+            {aiSettingsLoading ? (
+              <div className="mt-2 flex items-center gap-2 text-[12px] text-gray-400">
                 <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></div>
                 Loading AI instructions...
               </div>
             ) : aiSettings ? (
-              <div className="mt-3 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-600" strokeWidth={1.75} />
-                <span className="text-[12px] text-emerald-700">
-                  Using your custom AI instructions
+              <div className="mt-2 flex items-center gap-2 text-[12px] text-gray-500">
+                <Sparkles className="h-3 w-3" strokeWidth={1.75} />
+                <span>
+                  Using custom AI instructions
                   {aiSettings.review_tone && (
-                    <span className="text-emerald-600"> • Tone: {aiSettings.review_tone}</span>
+                    <span className="text-gray-400"> • Tone: {aiSettings.review_tone}</span>
                   )}
                   {aiSettings.focus_areas && aiSettings.focus_areas.length > 0 && (
-                    <span className="text-emerald-600">
+                    <span className="text-gray-400">
                       {' '}
                       • Focus: {aiSettings.focus_areas.length} area{aiSettings.focus_areas.length !== 1 ? 's' : ''}
                     </span>
@@ -462,12 +469,27 @@ ${employee.full_name} has consistently demonstrated excellence in the following 
                 </div>
               </div>
 
+              {/* Error Message */}
+              {generationError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-[13px] font-medium text-red-800">Generation failed</p>
+                      <p className="text-[12px] text-red-700 mt-0.5">{generationError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Generate Button */}
               <button
                 onClick={handleGenerateReview}
                 disabled={
                   !selectedEmployee ||
                   isGenerating ||
+                  !defaultProviderKey ||
+                  defaultProviderKey.validation_status !== 'valid' ||
                   (isCustomDateRange && (!customStartDate || !customEndDate))
                 }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-black px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
@@ -476,6 +498,16 @@ ${employee.full_name} has consistently demonstrated excellence in the following 
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
                     Generating Review...
+                  </>
+                ) : !defaultProviderKey ? (
+                  <>
+                    <Key className="h-4 w-4" strokeWidth={2} />
+                    Add API Key to Generate
+                  </>
+                ) : defaultProviderKey.validation_status !== 'valid' ? (
+                  <>
+                    <AlertCircle className="h-4 w-4" strokeWidth={2} />
+                    Fix API Key to Generate
                   </>
                 ) : (
                   <>
