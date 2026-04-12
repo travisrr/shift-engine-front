@@ -492,14 +492,28 @@ async function generateWithMoonshot(
   userPrompt: string,
   maxLength: number
 ): Promise<string> {
-  return generateWithOpenAICompatible(
-    {
-      ...providerKey,
-      base_url: providerKey.base_url || 'https://api.moonshot.ai/v1',
-      default_model: providerKey.default_model || 'kimi-k2.5',
+  const response = await fetch(`${(providerKey.base_url || 'https://api.moonshot.ai/v1').replace(/\/$/, '')}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${providerKey.api_key}`,
     },
-    systemPrompt,
-    userPrompt,
-    maxLength
-  );
+    body: JSON.stringify({
+      model: providerKey.default_model || 'kimi-k2.5',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: Math.min(Math.ceil(maxLength / 4), 2000),
+      temperature: 1,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`API error: ${response.status} ${error}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
 }
