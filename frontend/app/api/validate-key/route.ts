@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ...validationResult, model: key.default_model });
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    const errorMessage = err instanceof Error ? err.message : 'Unknown validation error';
+    console.error('Validation error:', errorMessage);
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
