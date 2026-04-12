@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Users,
   UserCog,
-  Star,
+  MessageSquare,
   Settings,
   ChevronDown,
   Cog,
@@ -34,9 +34,9 @@ const navItems: NavItem[] = [
   },
   {
     label: 'Reviews',
-    icon: Star,
+    icon: MessageSquare,
     children: [
-      { label: 'Build Review', href: '/dashboard/reviews/build', icon: Star },
+      { label: 'AI Review Builder', href: '/dashboard/reviews', icon: MessageSquare },
     ],
   },
 ];
