@@ -153,7 +153,7 @@ export default function Dashboard({
   const [isServersCollapsed, setIsServersCollapsed] = useState(false);
   const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
   // Restaurant selector state
-  const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantId>(RESTAURANTS[0].id);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>(RESTAURANTS[0].id);
   const [isRestaurantDropdownOpen, setIsRestaurantDropdownOpen] = useState(false);
 
   const activeRestaurant = RESTAURANTS.find(r => r.id === selectedRestaurant) ?? RESTAURANTS[0];
