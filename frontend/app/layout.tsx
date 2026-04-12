@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,8 +28,9 @@ export default function RootLayout({
          * This fixed background was causing continuous 60fps rendering on all pages.
          * Now using simple static background color instead.
          */}
-        <div className="relative z-10 flex min-h-screen flex-col">
-          <main className="flex-1">{children}</main>
+        <AuthProvider>
+          <div className="relative z-10 flex min-h-screen flex-col">
+            <main className="flex-1">{children}</main>
           <footer className="border-t-4 border-shift-brown bg-shift-text-dark px-6 py-12 text-white">
             <div className="mx-auto w-full max-w-6xl">
               {/* Main Footer Content */}
@@ -113,7 +115,8 @@ export default function RootLayout({
               </div>
             </div>
           </footer>
-        </div>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

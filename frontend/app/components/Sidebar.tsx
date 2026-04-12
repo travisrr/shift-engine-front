@@ -10,10 +10,13 @@ import {
   Cog,
   Upload,
   ChevronRight,
+  LogOut,
+  Loader2,
 } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
 
 interface NavItem {
   label: string;
@@ -50,8 +53,11 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
   const [collapsed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['Wait Staff', 'Reviews']);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut, isLoading } = useAuth();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -276,25 +282,51 @@ export default function Sidebar({ onFileUpload }: SidebarProps) {
 
       {/* User profile section */}
       <div className="border-t border-gray-200 px-2 py-2">
-        <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-50">
-          {/* Avatar */}
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-white">
-            M
-          </div>
-          {!collapsed && (
-            <div className="flex flex-1 items-center justify-between">
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-medium text-black">
-                  Manager
-                </p>
-                <p className="truncate text-[10px] text-gray-400">
-                  admin@shiftengine.io
-                </p>
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-zinc-50"
+          >
+            {/* Avatar */}
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-white">
+              {isLoading ? '?' : user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            {!collapsed && (
+              <div className="flex flex-1 items-center justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-[12px] font-medium text-black">
+                    {isLoading ? 'Loading...' : user?.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="truncate text-[10px] text-gray-400">
+                    {isLoading ? '' : user?.email || ''}
+                  </p>
+                </div>
+                <ChevronDown className={`h-3 w-3 shrink-0 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
               </div>
-              <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
+            )}
+          </button>
+
+          {/* User menu dropdown */}
+          {showUserMenu && !collapsed && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+              <button
+                onClick={async () => {
+                  await signOut();
+                  router.push('/login');
+                }}
+                disabled={isLoading}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-gray-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" />
+                )}
+                Sign out
+              </button>
             </div>
           )}
-        </button>
+        </div>
       </div>
     </aside>
   );
