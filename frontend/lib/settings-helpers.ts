@@ -400,6 +400,12 @@ export interface AIProviderKeyPublic {
   updated_at: string;
 }
 
+export interface AIProviderSelectionStatus {
+  selectedKey: AIProviderKeyPublic | null;
+  defaultKey: AIProviderKeyPublic | null;
+  fallbackWarning: string | null;
+}
+
 // Provider metadata for UI
 export const AI_PROVIDER_METADATA: Record<AIProvider, {
   name: string;
@@ -489,6 +495,11 @@ export async function getAIProviderKeys(): Promise<AIProviderKeyPublic[]> {
 }
 
 export async function getDefaultAIProviderKey(): Promise<AIProviderKeyPublic | null> {
+  const status = await getAIProviderSelectionStatus();
+  return status.selectedKey;
+}
+
+export async function getAIProviderSelectionStatus(): Promise<AIProviderSelectionStatus> {
   const { data, error } = await supabase
     .from('ai_provider_keys')
     .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, validation_model, label, monthly_usage_count, created_at, updated_at')
@@ -498,21 +509,47 @@ export async function getDefaultAIProviderKey(): Promise<AIProviderKeyPublic | n
 
   if (error) {
     console.error('Error fetching default AI provider key:', error);
-    return null;
+    return {
+      selectedKey: null,
+      defaultKey: null,
+      fallbackWarning: null,
+    };
   }
 
   if (!data || data.length === 0) {
-    return null;
+    return {
+      selectedKey: null,
+      defaultKey: null,
+      fallbackWarning: null,
+    };
   }
 
+  const defaultKey = data.find((key) => key.is_default) || null;
   const validDefault = data.find((key) => key.is_default && key.validation_status === 'valid');
-  if (validDefault) return validDefault;
+  if (validDefault) {
+    return {
+      selectedKey: validDefault,
+      defaultKey,
+      fallbackWarning: null,
+    };
+  }
 
   const validActive = data.find((key) => key.validation_status === 'valid');
-  if (validActive) return validActive;
+  if (validActive) {
+    return {
+      selectedKey: validActive,
+      defaultKey,
+      fallbackWarning: defaultKey
+        ? `${defaultKey.provider_name} is marked as the default provider, but it is ${defaultKey.validation_status}. AI Review Builder will use ${validActive.provider_name} instead until you fix or switch the default key.`
+        : null,
+    };
+  }
 
-  const anyDefault = data.find((key) => key.is_default);
-  return anyDefault || data[0] || null;
+  return {
+    selectedKey: defaultKey || data[0] || null,
+    defaultKey,
+    fallbackWarning: null,
+  };
 }
 
 export async function getAIProviderKeyById(id: string): Promise<AIProviderKey | null> {

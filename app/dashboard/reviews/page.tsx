@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, Wand2, Copy, Check, Calendar, X, Settings, Sparkles, AlertCircle, Key, ExternalLink } from 'lucide-react';
 import Sidebar from '@/app/components/Sidebar';
-import { getAISettings, getDefaultAIProviderKey, type AISettings, type AIProviderKeyPublic } from '@/lib/settings-helpers';
+import { getAISettings, getAIProviderSelectionStatus, type AISettings, type AIProviderKeyPublic } from '@/lib/settings-helpers';
 
 // Lazy Supabase client to avoid build-time errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,6 +53,7 @@ export default function AIReviewBuilderPage() {
   // AI Provider Key status
   const [defaultProviderKey, setDefaultProviderKey] = useState<AIProviderKeyPublic | null>(null);
   const [providerKeyLoading, setProviderKeyLoading] = useState(true);
+  const [providerFallbackWarning, setProviderFallbackWarning] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Fetch staff and AI settings on mount
@@ -82,8 +83,9 @@ export default function AIReviewBuilderPage() {
   async function fetchProviderKey() {
     try {
       setProviderKeyLoading(true);
-      const key = await getDefaultAIProviderKey();
-      setDefaultProviderKey(key);
+      const status = await getAIProviderSelectionStatus();
+      setDefaultProviderKey(status.selectedKey);
+      setProviderFallbackWarning(status.fallbackWarning);
     } catch (err) {
       console.error('Error fetching provider key:', err);
     } finally {
@@ -295,6 +297,22 @@ export default function AIReviewBuilderPage() {
                 </span>
               </div>
             ) : null}
+
+            {providerFallbackWarning && (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 text-amber-600" strokeWidth={1.75} />
+                <div>
+                  <p className="text-[12px] text-amber-800">{providerFallbackWarning}</p>
+                  <a
+                    href="/dashboard/settings?tab=ai-keys"
+                    className="mt-1 inline-flex items-center gap-1 text-[12px] font-medium text-amber-900 hover:underline"
+                  >
+                    <Key className="h-3 w-3" />
+                    Review AI key settings
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Main Content ── */}
