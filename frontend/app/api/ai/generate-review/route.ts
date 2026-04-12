@@ -26,6 +26,42 @@ type ProviderKeyRecord = {
   is_default: boolean;
 };
 
+type UploadRow = {
+  id: string;
+  date: string;
+};
+
+type ReviewMetricRow = {
+  upload_id: string;
+  score: number | string | null;
+  sales_hr: number | string | null;
+  tips_hr: number | string | null;
+  tip_pct: number | string | null;
+  avg_check: number | string | null;
+  guests_hr: number | string | null;
+};
+
+type ReviewDateRange = {
+  startDate: string;
+  endDate: string;
+  periodText: string;
+};
+
+type ReviewMetrics = {
+  startDate: string;
+  endDate: string;
+  firstShiftDate: string;
+  lastShiftDate: string;
+  shiftCount: number;
+  averageScore: number | null;
+  averageSalesHr: number | null;
+  averageTipsHr: number | null;
+  averageTipPct: number | null;
+  averageAvgCheck: number | null;
+  averageGuestsHr: number | null;
+  averagePpa: number | null;
+};
+
 // Lazy initialization of Supabase client to avoid build-time errors
 let supabaseClient: SupabaseClient | null = null;
 
@@ -123,30 +159,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build the time period description
-    let periodText: string;
-    if (body.customDateRange?.start && body.customDateRange?.end) {
-      const start = new Date(body.customDateRange.start).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      const end = new Date(body.customDateRange.end).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      periodText = `the period from ${start} to ${end}`;
-    } else {
-      periodText =
-        body.timePeriod === 'last_30_days'
-          ? 'the past 30 days'
-          : body.timePeriod === 'last_quarter'
-            ? 'the last quarter'
-            : body.timePeriod === 'last_6_months'
-              ? 'the last 6 months'
-              : 'the past year';
+    const reviewDateRange = getReviewDateRange(body);
+    const metrics = await fetchReviewMetrics(
+      supabase,
+      body.employeeName,
+      reviewDateRange.startDate,
+      reviewDateRange.endDate
+    );
+
+    if (!metrics) {
+      return NextResponse.json(
+        {
+          error: `No Toast metrics found for ${body.employeeName} between ${formatDateLabel(reviewDateRange.startDate)} and ${formatDateLabel(reviewDateRange.endDate)}.`,
+        },
+        { status: 404 }
+      );
     }
+
+    const metricSnapshot = buildMetricSnapshot(metrics);
+    const promptMetricSnapshot = buildPromptMetricSnapshot(metrics);
 
     // Build the system prompt based on AI settings
     const instructions = aiSettings?.review_instructions || '';
@@ -177,26 +208,52 @@ export async function POST(request: NextRequest) {
       detailed: 'Provide detailed observations with specific examples.',
     };
 
-    const systemPrompt = `You are an expert HR professional writing performance reviews for restaurant staff.
-${instructions ? `\nCompany guidelines: ${instructions}` : ''}
+    const systemPrompt = `You are an expert Restaurant General Manager writing a performance review for a restaurant ${body.jobTitle.toLowerCase()} based only on the provided Toast POS metrics.
+${instructions ? `\nSaved company review guidance:\n${instructions}` : ''}
 ${aiSettings?.custom_prompt_template ? `\nCustom template: ${aiSettings.custom_prompt_template}` : ''}
 
 Tone requirements: ${toneInstructions[effectiveTone] || toneInstructions.professional}
 Focus areas to emphasize: ${focusAreasText}
 ${includeSuggestions ? 'Include 1-2 constructive suggestions for improvement.' : 'Do not include suggestions for improvement.'}
-Maximum length: ${maxLength} characters.`;
+Purpose: We build community for our neighbors, growth for our teammates and a vision of success for our industry.
+Values to weave in only when appropriate and supported by the data:
+- We are positive and proactively manage our emotions.
+- We are accountable and find a way.
+- We treat each other with dignity, equity, and respect.
+- We are creative, sharp, organized and safe.
+- We grow personally and professionally through ongoing training and development.
+- We over deliver on value.
+- We are storytellers.
+- We are fiscally healthy.
 
-    const userPrompt = `Write a performance review for ${body.employeeName}, a ${body.jobTitle}, for ${periodText}.
+Non-negotiable rules:
+- Use ONLY the provided metric snapshot. Do not invent any metrics, trends, comparisons, ranks, behaviors, dessert attach rate, voids, modifiers, rush patterns, or guest anecdotes.
+- If a metric is not provided, do not mention it.
+- Mention the company purpose and values naturally when they truly fit the data. Do not list all values or sound like a commercial.
+- Keep the prose body to about ${maxLength} characters. The metric snapshot bullets are shown separately.
+- Output exactly these sections with no intro or closing fluff:
+Reality Check:
+Impact:
+Target:
+- Reality Check should be 1-2 sentences.
+- Impact should be 2-3 sentences and connect the data to their tips, the guest experience, and the restaurant's bottom line.
+- Target should be exactly 1 sentence with one specific, data-driven goal for the next shift.`;
+
+    const userPrompt = `Write a performance review for ${body.employeeName}, a ${body.jobTitle}, for ${reviewDateRange.periodText}.
+
+This metric snapshot is factual and must anchor the review:
+${promptMetricSnapshot}
 
 The review should highlight their strengths in: ${focusAreasText}.
 
-Write a complete, well-structured performance review that a restaurant manager would be proud to share.`;
+Do not make up any missing numbers or peer comparisons.`;
 
     // Generate the review using the appropriate provider
     let generatedReview: string;
 
     try {
-      generatedReview = await generateWithProvider(providerKey, systemPrompt, userPrompt, maxLength);
+      generatedReview = await generateWithProvider(providerKey, systemPrompt, userPrompt, Math.max(maxLength, 700));
+      generatedReview = `${metricSnapshot}\n\n${generatedReview.trim()}`;
 
       // Update usage stats
       await supabase
@@ -253,6 +310,228 @@ Write a complete, well-structured performance review that a restaurant manager w
       { status: 500 }
     );
   }
+}
+
+function getReviewDateRange(body: GenerateReviewRequest): ReviewDateRange {
+  if (body.customDateRange?.start && body.customDateRange?.end) {
+    return {
+      startDate: body.customDateRange.start,
+      endDate: body.customDateRange.end,
+      periodText: `the period from ${formatDateLabel(body.customDateRange.start)} to ${formatDateLabel(body.customDateRange.end)}`,
+    };
+  }
+
+  const endDate = new Date();
+  endDate.setHours(0, 0, 0, 0);
+  const startDate = new Date(endDate);
+
+  switch (body.timePeriod) {
+    case 'last_30_days':
+      startDate.setDate(startDate.getDate() - 29);
+      break;
+    case 'last_quarter':
+      startDate.setDate(startDate.getDate() - 89);
+      break;
+    case 'last_6_months':
+      startDate.setDate(startDate.getDate() - 179);
+      break;
+    default:
+      startDate.setDate(startDate.getDate() - 364);
+      break;
+  }
+
+  return {
+    startDate: toDateInputValue(startDate),
+    endDate: toDateInputValue(endDate),
+    periodText:
+      body.timePeriod === 'last_30_days'
+        ? 'the past 30 days'
+        : body.timePeriod === 'last_quarter'
+          ? 'the last quarter'
+          : body.timePeriod === 'last_6_months'
+            ? 'the last 6 months'
+            : 'the past year',
+  };
+}
+
+async function fetchReviewMetrics(
+  supabase: SupabaseClient,
+  employeeName: string,
+  startDate: string,
+  endDate: string
+): Promise<ReviewMetrics | null> {
+  const { data: uploads, error: uploadsError } = await supabase
+    .from('uploads')
+    .select('id, date')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true });
+
+  if (uploadsError) {
+    throw uploadsError;
+  }
+
+  const uploadRows = (uploads || []) as UploadRow[];
+  if (uploadRows.length === 0) {
+    return null;
+  }
+
+  const uploadIds = uploadRows.map((upload) => upload.id);
+  const uploadDateById = new Map(uploadRows.map((upload) => [upload.id, upload.date]));
+
+  const { data: metricRows, error: metricError } = await supabase
+    .from('server_scores')
+    .select('upload_id, score, sales_hr, tips_hr, tip_pct, avg_check, guests_hr')
+    .ilike('server_name', employeeName)
+    .in('upload_id', uploadIds);
+
+  if (metricError) {
+    throw metricError;
+  }
+
+  const rows = ((metricRows || []) as ReviewMetricRow[])
+    .filter((row) => uploadDateById.has(row.upload_id))
+    .sort((a, b) => {
+      const dateA = uploadDateById.get(a.upload_id) || '';
+      const dateB = uploadDateById.get(b.upload_id) || '';
+      return dateA.localeCompare(dateB);
+    });
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const shiftDates = rows
+    .map((row) => uploadDateById.get(row.upload_id))
+    .filter((value): value is string => Boolean(value));
+
+  return {
+    startDate,
+    endDate,
+    firstShiftDate: shiftDates[0],
+    lastShiftDate: shiftDates[shiftDates.length - 1],
+    shiftCount: rows.length,
+    averageScore: averageMetric(rows.map((row) => toNumber(row.score))),
+    averageSalesHr: averageMetric(rows.map((row) => toNumber(row.sales_hr))),
+    averageTipsHr: averageMetric(rows.map((row) => toNumber(row.tips_hr))),
+    averageTipPct: averageMetric(rows.map((row) => toNumber(row.tip_pct))),
+    averageAvgCheck: averageMetric(rows.map((row) => toNumber(row.avg_check))),
+    averageGuestsHr: averageMetric(rows.map((row) => toNumber(row.guests_hr))),
+    averagePpa: averageMetric(rows.map((row) => getDerivedPpa(row))),
+  };
+}
+
+function buildMetricSnapshot(metrics: ReviewMetrics): string {
+  const lines = [
+    'Metric Snapshot',
+    `- Review window: ${formatDateLabel(metrics.startDate)} to ${formatDateLabel(metrics.endDate)}`,
+    `- Upload days with data: ${metrics.shiftCount}`,
+    `- Actual data dates: ${formatDateLabel(metrics.firstShiftDate)} to ${formatDateLabel(metrics.lastShiftDate)}`,
+  ];
+
+  const metricLines = [
+    formatMetricLine('Average score', metrics.averageScore, 'number', 0),
+    formatMetricLine('Average sales/hr', metrics.averageSalesHr, 'currency', 2),
+    formatMetricLine('Average tips/hr', metrics.averageTipsHr, 'currency', 2),
+    formatMetricLine('Average tip %', metrics.averageTipPct, 'percentage', 1),
+    formatMetricLine('Average check', metrics.averageAvgCheck, 'currency', 2),
+    formatMetricLine('Average guests/hr', metrics.averageGuestsHr, 'number', 1),
+    formatMetricLine('Average PPA', metrics.averagePpa, 'currency', 2),
+  ].filter(Boolean);
+
+  return [...lines, ...metricLines].join('\n');
+}
+
+function buildPromptMetricSnapshot(metrics: ReviewMetrics): string {
+  return [
+    `- Review window: ${formatDateLabel(metrics.startDate)} to ${formatDateLabel(metrics.endDate)}`,
+    `- Upload days with data: ${metrics.shiftCount}`,
+    `- Actual data dates: ${formatDateLabel(metrics.firstShiftDate)} to ${formatDateLabel(metrics.lastShiftDate)}`,
+    formatMetricLine('Average score', metrics.averageScore, 'number', 0),
+    formatMetricLine('Average sales/hr', metrics.averageSalesHr, 'currency', 2),
+    formatMetricLine('Average tips/hr', metrics.averageTipsHr, 'currency', 2),
+    formatMetricLine('Average tip %', metrics.averageTipPct, 'percentage', 1),
+    formatMetricLine('Average check', metrics.averageAvgCheck, 'currency', 2),
+    formatMetricLine('Average guests/hr', metrics.averageGuestsHr, 'number', 1),
+    formatMetricLine('Average PPA', metrics.averagePpa, 'currency', 2),
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function formatMetricLine(
+  label: string,
+  value: number | null,
+  format: 'currency' | 'percentage' | 'number',
+  decimals: number
+): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  return `- ${label}: ${formatMetricValue(value, format, decimals)}`;
+}
+
+function formatMetricValue(
+  value: number,
+  format: 'currency' | 'percentage' | 'number',
+  decimals: number
+): string {
+  if (format === 'currency') {
+    return `$${value.toFixed(decimals)}`;
+  }
+
+  if (format === 'percentage') {
+    return `${value.toFixed(decimals)}%`;
+  }
+
+  return value.toFixed(decimals);
+}
+
+function averageMetric(values: Array<number | null>): number | null {
+  const numbers = values.filter((value): value is number => value !== null && Number.isFinite(value));
+  if (numbers.length === 0) {
+    return null;
+  }
+
+  return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+}
+
+function toNumber(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getDerivedPpa(row: Pick<ReviewMetricRow, 'sales_hr' | 'guests_hr'>): number | null {
+  const salesHr = toNumber(row.sales_hr);
+  const guestsHr = toNumber(row.guests_hr);
+
+  if (salesHr === null || guestsHr === null || guestsHr <= 0) {
+    return null;
+  }
+
+  return salesHr / guestsHr;
+}
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateLabel(dateValue: string): string {
+  const [year, month, day] = dateValue.split('-').map(Number);
+  const date = new Date(year, (month || 1) - 1, day || 1);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function selectPreferredProviderKey(keys: ProviderKeyRecord[]): ProviderKeyRecord | null {
