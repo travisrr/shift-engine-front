@@ -283,20 +283,48 @@ async function validateMoonshot(key: { api_key: string; default_model: string; b
       return { success: false, error: 'Invalid API key', model };
     }
     if (response.status === 429) {
-      return { success: false, error: 'Rate limit exceeded', model };
+      const errorData = await response.json().catch(() => null);
+      return {
+        success: false,
+        error: getMoonshotErrorMessage(errorData?.error?.message, response.status),
+        model,
+      };
     }
     if (response.status === 404) {
       return { success: false, error: `Model "${model}" not available`, model };
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      return { success: false, error: errorData?.error?.message || `API error: ${response.status}`, model };
+      return {
+        success: false,
+        error: getMoonshotErrorMessage(errorData?.error?.message, response.status),
+        model,
+      };
     }
 
     return { success: true, model };
   } catch {
     return { success: false, error: 'Network error', model };
   }
+}
+
+function getMoonshotErrorMessage(message: string | undefined, status: number): string {
+  const normalized = String(message || '').toLowerCase();
+
+  if (
+    normalized.includes('insufficient balance') ||
+    normalized.includes('exceeded_current_quota_error') ||
+    normalized.includes('check your plan and billing details') ||
+    normalized.includes('suspended due to insufficient balance')
+  ) {
+    return 'Moonshot billing issue: recharge the account or check the provider plan and billing details.';
+  }
+
+  if (status === 429) {
+    return 'Rate limit exceeded';
+  }
+
+  return message || `API error: ${status}`;
 }
 
 async function validateCustom(key: { api_key: string; default_model: string; base_url?: string }): Promise<{ success: boolean; error?: string }> {

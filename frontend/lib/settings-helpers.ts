@@ -492,18 +492,27 @@ export async function getDefaultAIProviderKey(): Promise<AIProviderKeyPublic | n
   const { data, error } = await supabase
     .from('ai_provider_keys')
     .select('id, provider, provider_name, key_last_four, default_model, available_models, is_active, is_default, last_validated_at, validation_status, validation_error, validation_model, label, monthly_usage_count, created_at, updated_at')
-    .eq('is_default', true)
     .eq('is_active', true)
-    .single();
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true });
 
   if (error) {
-    // No default key set is not an error
-    if (error.code === 'PGRST116') return null;
     console.error('Error fetching default AI provider key:', error);
     return null;
   }
 
-  return data;
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const validDefault = data.find((key) => key.is_default && key.validation_status === 'valid');
+  if (validDefault) return validDefault;
+
+  const validActive = data.find((key) => key.validation_status === 'valid');
+  if (validActive) return validActive;
+
+  const anyDefault = data.find((key) => key.is_default);
+  return anyDefault || data[0] || null;
 }
 
 export async function getAIProviderKeyById(id: string): Promise<AIProviderKey | null> {
@@ -548,6 +557,10 @@ export async function createAIProviderKey(
   const keyLastFour = input.api_key.length > 4
     ? `...${input.api_key.slice(-4)}`
     : '****';
+
+  if (input.is_default === true) {
+    await unsetAllDefaultProviderKeys();
+  }
 
   const { data, error } = await supabase
     .from('ai_provider_keys')
@@ -637,11 +650,16 @@ export async function updateAIProviderKey(
   return data;
 }
 
-async function unsetAllDefaultProviderKeys(exceptId: string): Promise<boolean> {
-  const { error } = await supabase
+async function unsetAllDefaultProviderKeys(exceptId?: string): Promise<boolean> {
+  let query = supabase
     .from('ai_provider_keys')
-    .update({ is_default: false })
-    .neq('id', exceptId);
+    .update({ is_default: false });
+
+  if (exceptId) {
+    query = query.neq('id', exceptId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error('Error unsetting default provider keys:', error);

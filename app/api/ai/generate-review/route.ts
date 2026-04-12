@@ -12,6 +12,20 @@ interface GenerateReviewRequest {
   providerKeyId?: string; // Optional: specific key to use
 }
 
+type ProviderKeyRecord = {
+  id: string;
+  provider: string;
+  provider_name: string;
+  api_key: string;
+  organization_id: string | null;
+  base_url: string | null;
+  default_model: string;
+  validation_status: 'pending' | 'valid' | 'invalid' | 'expired';
+  validation_error: string | null;
+  monthly_usage_count: number;
+  is_default: boolean;
+};
+
 // Lazy initialization of Supabase client to avoid build-time errors
 let supabaseClient: SupabaseClient | null = null;
 
@@ -67,19 +81,29 @@ export async function POST(request: NextRequest) {
       console.error('Error fetching AI settings:', aiSettingsError);
     }
 
-    // Fetch the default or specified AI provider key
-    let providerQuery = supabase
-      .from('ai_provider_keys')
-      .select('*')
-      .eq('is_active', true);
+    let providerKey: ProviderKeyRecord | null = null;
+    let providerError: unknown = null;
 
     if (body.providerKeyId) {
-      providerQuery = providerQuery.eq('id', body.providerKeyId);
+      const result = await supabase
+        .from('ai_provider_keys')
+        .select('*')
+        .eq('is_active', true)
+        .eq('id', body.providerKeyId)
+        .single();
+      providerKey = result.data;
+      providerError = result.error;
     } else {
-      providerQuery = providerQuery.eq('is_default', true);
-    }
+      const result = await supabase
+        .from('ai_provider_keys')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: true });
 
-    const { data: providerKey, error: providerError } = await providerQuery.single();
+      providerKey = selectPreferredProviderKey(result.data || []);
+      providerError = result.error;
+    }
 
     if (providerError || !providerKey) {
       console.error('Provider key error:', providerError);
@@ -204,9 +228,10 @@ Write a complete, well-structured performance review that a restaurant manager w
         );
       }
 
-      if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+      const quotaError = getProviderQuotaErrorMessage(providerKey.provider_name, errorMessage);
+      if (quotaError) {
         return NextResponse.json(
-          { error: 'Rate limit exceeded. Please try again in a moment.' },
+          { error: quotaError },
           { status: 429 }
         );
       }
@@ -228,6 +253,40 @@ Write a complete, well-structured performance review that a restaurant manager w
       { status: 500 }
     );
   }
+}
+
+function selectPreferredProviderKey(keys: ProviderKeyRecord[]): ProviderKeyRecord | null {
+  if (keys.length === 0) {
+    return null;
+  }
+
+  const validDefault = keys.find((key) => key.is_default && key.validation_status === 'valid');
+  if (validDefault) return validDefault;
+
+  const validActive = keys.find((key) => key.validation_status === 'valid');
+  if (validActive) return validActive;
+
+  const anyDefault = keys.find((key) => key.is_default);
+  return anyDefault || keys[0] || null;
+}
+
+function getProviderQuotaErrorMessage(providerName: string, errorMessage: string): string | null {
+  const normalized = errorMessage.toLowerCase();
+
+  if (
+    normalized.includes('insufficient balance') ||
+    normalized.includes('exceeded_current_quota_error') ||
+    normalized.includes('check your plan and billing details') ||
+    normalized.includes('suspended due to insufficient balance')
+  ) {
+    return `${providerName} billing issue: recharge the account or check the provider plan and billing details.`;
+  }
+
+  if (normalized.includes('429') || normalized.includes('rate limit')) {
+    return 'Rate limit exceeded. Please try again in a moment.';
+  }
+
+  return null;
 }
 
 async function generateWithProvider(
