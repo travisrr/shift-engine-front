@@ -354,7 +354,7 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
 // AI PROVIDER KEYS HELPERS (BYOK)
 // ============================================
 
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'azure_openai' | 'custom';
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'azure_openai' | 'moonshot' | 'custom';
 
 export interface AIProviderKey {
   id: string;
@@ -451,6 +451,16 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
     supportsOrganization: false,
     supportsCustomBaseUrl: true,
   },
+  moonshot: {
+    name: 'Moonshot / Kimi',
+    description: 'Kimi models via Moonshot AI OpenAI-compatible API',
+    keyPlaceholder: 'sk-...',
+    keyPattern: '^sk-[a-zA-Z0-9_-]+$',
+    keyHelpUrl: 'https://platform.moonshot.ai/',
+    defaultModels: ['kimi-k2.5'],
+    supportsOrganization: false,
+    supportsCustomBaseUrl: false,
+  },
   custom: {
     name: 'Custom Provider',
     description: 'Any OpenAI-compatible API endpoint',
@@ -530,6 +540,9 @@ export async function createAIProviderKey(
   input: CreateAIProviderKeyInput
 ): Promise<CreateAIProviderKeyResult> {
   const metadata = AI_PROVIDER_METADATA[input.provider];
+  const resolvedBaseUrl = input.provider === 'moonshot'
+    ? 'https://api.moonshot.ai/v1'
+    : input.base_url || null;
 
   // Extract last 4 characters of key for display (safely)
   const keyLastFour = input.api_key.length > 4
@@ -546,7 +559,7 @@ export async function createAIProviderKey(
       label: input.label || metadata.name,
       notes: input.notes || null,
       organization_id: input.organization_id || null,
-      base_url: input.base_url || null,
+      base_url: resolvedBaseUrl,
       default_model: input.default_model || metadata.defaultModels[0],
       available_models: metadata.defaultModels,
       is_default: input.is_default ?? false,

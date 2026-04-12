@@ -249,6 +249,8 @@ async function generateWithProvider(
       return generateWithAnthropic(providerKey, systemPrompt, userPrompt, maxLength);
     case 'google':
       return generateWithGoogle(providerKey, systemPrompt, userPrompt, maxLength);
+    case 'moonshot':
+      return generateWithMoonshot(providerKey, systemPrompt, userPrompt, maxLength);
     default:
       // Try OpenAI-compatible endpoint for custom providers
       return generateWithOpenAICompatible(providerKey, systemPrompt, userPrompt, maxLength);
@@ -482,4 +484,22 @@ async function generateWithOpenAICompatible(
 
   const data = await response.json();
   return data.choices[0].message.content;
+}
+
+async function generateWithMoonshot(
+  providerKey: { api_key: string; base_url: string | null; default_model: string },
+  systemPrompt: string,
+  userPrompt: string,
+  maxLength: number
+): Promise<string> {
+  return generateWithOpenAICompatible(
+    {
+      ...providerKey,
+      base_url: providerKey.base_url || 'https://api.moonshot.ai/v1',
+      default_model: providerKey.default_model || 'kimi-k2.5',
+    },
+    systemPrompt,
+    userPrompt,
+    maxLength
+  );
 }

@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
       case 'google':
         validationResult = await validateGoogle(key);
         break;
+      case 'moonshot':
+        validationResult = await validateMoonshot(key);
+        break;
       case 'azure_openai':
         validationResult = await validateAzureOpenAI(key);
         break;
@@ -288,6 +291,45 @@ async function validateAzureOpenAI(key: { api_key: string; default_model: string
     return { success: true };
   } catch {
     return { success: false, error: 'Network error. Check your Azure endpoint URL.' };
+  }
+}
+
+async function validateMoonshot(key: { api_key: string; default_model: string; base_url?: string }): Promise<{ success: boolean; error?: string; model?: string }> {
+  const baseUrl = key.base_url || 'https://api.moonshot.ai/v1';
+  const model = key.default_model || 'kimi-k2.5';
+
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key.api_key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 8,
+        temperature: 0.1,
+      }),
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Invalid API key', model };
+    }
+    if (response.status === 429) {
+      return { success: false, error: 'Rate limit exceeded', model };
+    }
+    if (response.status === 404) {
+      return { success: false, error: `Model "${model}" not available`, model };
+    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      return { success: false, error: errorData?.error?.message || `API error: ${response.status}`, model };
+    }
+
+    return { success: true, model };
+  } catch {
+    return { success: false, error: 'Network error', model };
   }
 }
 

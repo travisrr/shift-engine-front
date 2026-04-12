@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS ai_provider_keys (
   id                    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   -- Provider configuration
-  provider              TEXT NOT NULL CHECK (provider IN ('openai', 'anthropic', 'google', 'azure_openai', 'custom')),
+  provider              TEXT NOT NULL CHECK (provider IN ('openai', 'anthropic', 'google', 'azure_openai', 'moonshot', 'custom')),
   provider_name         TEXT NOT NULL, -- Display name (e.g., "OpenAI", "Anthropic Claude")
 
   -- API Key (encrypted at rest by Supabase)

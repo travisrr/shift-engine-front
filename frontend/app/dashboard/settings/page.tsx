@@ -404,6 +404,7 @@ export default function SettingsPage() {
       case 'anthropic': return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'google': return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'azure_openai': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'moonshot': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   }
