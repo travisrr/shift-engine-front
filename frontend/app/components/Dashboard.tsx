@@ -16,6 +16,7 @@ import {
   ChevronDownIcon,
   Building2,
 } from 'lucide-react';
+import { getActiveLocations, Location } from '@/lib/settings-helpers';
 
 /* ─────────────────── Tooltip Header Component ─────────────────── */
 
@@ -128,14 +129,6 @@ function scoreBorder(score: number) {
 
 /* ─────────────────── Component ─────────────────── */
 
-const RESTAURANTS = [
-  { id: 'german-town', name: 'German Town Cafe' },
-  { id: 'karriongton', name: 'Karriongton Rowe' },
-  { id: 'park-cafe', name: 'Park Cafe' },
-] as const;
-
-type RestaurantId = (typeof RESTAURANTS)[number]['id'];
-
 export default function Dashboard({
   servers,
   bartenders = [],
@@ -153,10 +146,27 @@ export default function Dashboard({
   const [isServersCollapsed, setIsServersCollapsed] = useState(false);
   const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
   // Restaurant selector state
-  const [selectedRestaurant, setSelectedRestaurant] = useState<string>(RESTAURANTS[0].id);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [isRestaurantDropdownOpen, setIsRestaurantDropdownOpen] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
-  const activeRestaurant = RESTAURANTS.find(r => r.id === selectedRestaurant) ?? RESTAURANTS[0];
+  // Fetch locations from settings
+  useEffect(() => {
+    async function fetchLocations() {
+      setIsLoadingLocations(true);
+      const activeLocations = await getActiveLocations();
+      setLocations(activeLocations);
+      // Select first location by default if available and none selected
+      if (activeLocations.length > 0 && !selectedLocation) {
+        setSelectedLocation(activeLocations[0].id);
+      }
+      setIsLoadingLocations(false);
+    }
+    fetchLocations();
+  }, []);
+
+  const activeLocation = locations.find(l => l.id === selectedLocation) ?? locations[0];
 
   // Ref for dropdown to handle click outside
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -231,34 +241,41 @@ export default function Dashboard({
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setIsRestaurantDropdownOpen(!isRestaurantDropdownOpen)}
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                  disabled={isLoadingLocations || locations.length === 0}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Building2 className="h-4 w-4 text-slate-400" strokeWidth={1.75} />
-                  <span>{activeRestaurant.name}</span>
-                  <ChevronDownIcon
-                    className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                      isRestaurantDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                    strokeWidth={2}
-                  />
+                  <span>
+                    {isLoadingLocations
+                      ? 'Loading...'
+                      : activeLocation?.name ?? 'No locations'}
+                  </span>
+                  {locations.length > 0 && (
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                        isRestaurantDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                      strokeWidth={2}
+                    />
+                  )}
                 </button>
-                {isRestaurantDropdownOpen && (
+                {isRestaurantDropdownOpen && locations.length > 0 && (
                   <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                    {RESTAURANTS.map((restaurant) => (
+                    {locations.map((location) => (
                       <button
-                        key={restaurant.id}
+                        key={location.id}
                         onClick={() => {
-                          setSelectedRestaurant(restaurant.id);
+                          setSelectedLocation(location.id);
                           setIsRestaurantDropdownOpen(false);
                         }}
                         className={`flex w-full items-center px-4 py-2 text-left text-[13px] transition-colors hover:bg-slate-50 ${
-                          selectedRestaurant === restaurant.id
+                          selectedLocation === location.id
                             ? 'bg-slate-50 font-medium text-slate-900'
                             : 'text-slate-600'
                         }`}
                       >
-                        <span className="flex-1">{restaurant.name}</span>
-                        {selectedRestaurant === restaurant.id && (
+                        <span className="flex-1">{location.name}</span>
+                        {selectedLocation === location.id && (
                           <div className="h-2 w-2 rounded-full bg-emerald-500" />
                         )}
                       </button>
