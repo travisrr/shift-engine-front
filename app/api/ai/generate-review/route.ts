@@ -559,11 +559,12 @@ async function generateWithMoonshot(
     },
     body: JSON.stringify({
       model: providerKey.default_model || 'kimi-k2.5',
+      thinking: { type: 'disabled' },
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: Math.min(Math.ceil(maxLength / 4), 2000),
+      max_tokens: Math.min(Math.max(Math.ceil(maxLength / 4), 512), 2000),
       temperature: 1,
     }),
   });
@@ -574,5 +575,11 @@ async function generateWithMoonshot(
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (typeof content === 'string' && content.trim()) {
+    return content.trim();
+  }
+
+  throw new Error('Moonshot returned an empty review.');
 }
