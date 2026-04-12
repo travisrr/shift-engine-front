@@ -437,7 +437,7 @@ export const AI_PROVIDER_METADATA: Record<AIProvider, {
     keyPlaceholder: 'AIza...',
     keyPattern: '^AIza[ a-zA-Z0-9_-]+$',
     keyHelpUrl: 'https://makersuite.google.com/app/apikey',
-    defaultModels: ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'],
+    defaultModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
     supportsOrganization: false,
     supportsCustomBaseUrl: false,
   },

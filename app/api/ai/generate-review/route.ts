@@ -344,45 +344,53 @@ async function generateWithGoogle(
   maxLength: number
 ): Promise<string> {
   const availableModels = await getAvailableGoogleModels(providerKey.api_key);
-  const modelName = pickGoogleModel(providerKey.default_model, availableModels);
+  const candidateModels = getOrderedGoogleModels(providerKey.default_model, availableModels);
 
-  if (!modelName) {
+  if (candidateModels.length === 0) {
     throw new Error('No Google models with generateContent support are available for this key.');
   }
+  let lastError = '';
 
-  console.log('Calling Google API with model:', modelName);
+  for (const modelName of candidateModels) {
+    console.log('Calling Google API with model:', modelName);
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${providerKey.api_key}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `${systemPrompt}\n\n${userPrompt}` },
-            ],
-          },
-        ],
-        generationConfig: {
-          maxOutputTokens: Math.min(Math.ceil(maxLength / 4), 2048),
-          temperature: 0.7,
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${providerKey.api_key}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    }
-  );
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: `${systemPrompt}\n\n${userPrompt}` },
+              ],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: Math.min(Math.ceil(maxLength / 4), 2048),
+            temperature: 0.7,
+          },
+        }),
+      }
+    );
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Google API error: ${response.status} ${error}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    lastError = await response.text();
+
+    if (response.status === 401 || response.status === 403 || response.status === 429) {
+      throw new Error(`Google API error: ${response.status} ${lastError}`);
+    }
   }
 
-  const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+  throw new Error(`Google API error: no compatible model succeeded. Tried ${candidateModels.slice(0, 5).join(', ')}. Last error: ${lastError}`);
 }
 
 async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
@@ -405,26 +413,38 @@ async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
     .filter(Boolean);
 }
 
-function pickGoogleModel(preferredModel: string | null | undefined, availableModels: string[]): string | null {
+function getOrderedGoogleModels(preferredModel: string | null | undefined, availableModels: string[]): string[] {
+  const ordered: string[] = [];
+
   if (preferredModel && availableModels.includes(preferredModel)) {
-    return preferredModel;
+    ordered.push(preferredModel);
   }
 
   const preferredFallbacks = [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
     'gemini-2.0-flash',
+    'gemini-2.0-flash-001',
     'gemini-2.0-flash-lite',
+    'gemini-2.0-flash-lite-001',
     'gemini-1.5-flash',
     'gemini-1.5-pro',
     'gemini-pro',
   ];
 
   for (const candidate of preferredFallbacks) {
-    if (availableModels.includes(candidate)) {
-      return candidate;
+    if (availableModels.includes(candidate) && !ordered.includes(candidate)) {
+      ordered.push(candidate);
     }
   }
 
-  return availableModels[0] || null;
+  for (const candidate of availableModels) {
+    if (!ordered.includes(candidate)) {
+      ordered.push(candidate);
+    }
+  }
+
+  return ordered;
 }
 
 async function generateWithOpenAICompatible(

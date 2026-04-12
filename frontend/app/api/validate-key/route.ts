@@ -176,69 +176,85 @@ async function getAvailableGoogleModels(apiKey: string): Promise<string[]> {
     .filter(Boolean);
 }
 
-function pickGoogleModel(preferredModel: string | null | undefined, availableModels: string[]): string | null {
+function getOrderedGoogleModels(preferredModel: string | null | undefined, availableModels: string[]): string[] {
+  const ordered: string[] = [];
+
   if (preferredModel && availableModels.includes(preferredModel)) {
-    return preferredModel;
+    ordered.push(preferredModel);
   }
 
   const preferredFallbacks = [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
     'gemini-2.0-flash',
+    'gemini-2.0-flash-001',
     'gemini-2.0-flash-lite',
+    'gemini-2.0-flash-lite-001',
     'gemini-1.5-flash',
     'gemini-1.5-pro',
     'gemini-pro',
   ];
 
   for (const candidate of preferredFallbacks) {
-    if (availableModels.includes(candidate)) {
-      return candidate;
+    if (availableModels.includes(candidate) && !ordered.includes(candidate)) {
+      ordered.push(candidate);
     }
   }
 
-  return availableModels[0] || null;
+  for (const candidate of availableModels) {
+    if (!ordered.includes(candidate)) {
+      ordered.push(candidate);
+    }
+  }
+
+  return ordered;
 }
 
 async function validateGoogle(key: { api_key: string; default_model: string }): Promise<{ success: boolean; error?: string; model?: string }> {
   try {
     const availableModels = await getAvailableGoogleModels(key.api_key);
-    const model = pickGoogleModel(key.default_model, availableModels);
+    const candidateModels = getOrderedGoogleModels(key.default_model, availableModels);
 
-    if (!model) {
+    if (candidateModels.length === 0) {
       return { success: false, error: 'No Google models with generateContent support are available for this key.' };
     }
+    let lastError = '';
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.api_key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-          generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
-        }),
+    for (const model of candidateModels) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.api_key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+            generationConfig: { maxOutputTokens: 10, temperature: 0.1 },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        return { success: true, model };
       }
-    );
 
-    if (response.status === 400 || response.status === 403) {
+      if (response.status === 400 || response.status === 403) {
+        const errorData = await response.json().catch(() => null);
+        return { success: false, error: errorData?.error?.message || 'Invalid API key', model };
+      }
+
+      if (response.status === 429) {
+        return { success: false, error: 'Rate limit exceeded', model };
+      }
+
       const errorData = await response.json().catch(() => null);
-      return { success: false, error: errorData?.error?.message || 'Invalid API key', model };
-    }
-    if (response.status === 404) {
-      return {
-        success: false,
-        error: `Configured model unavailable. Available models: ${availableModels.slice(0, 5).join(', ') || 'none found'}`,
-        model,
-      };
-    }
-    if (response.status === 429) {
-      return { success: false, error: 'Rate limit exceeded', model };
-    }
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      return { success: false, error: errorData?.error?.message || `API error: ${response.status}`, model };
+      lastError = errorData?.error?.message || `API error: ${response.status}`;
     }
 
-    return { success: true, model };
+    return {
+      success: false,
+      error: `Tried models: ${candidateModels.slice(0, 5).join(', ')}. Last error: ${lastError || 'unknown error'}`,
+      model: candidateModels[0],
+    };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Network error' };
   }
