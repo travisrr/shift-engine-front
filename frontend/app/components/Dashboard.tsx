@@ -134,6 +134,8 @@ const RESTAURANTS = [
   { id: 'park-cafe', name: 'Park Cafe' },
 ] as const;
 
+type RestaurantId = (typeof RESTAURANTS)[number]['id'];
+
 export default function Dashboard({
   servers,
   bartenders = [],
@@ -151,7 +153,7 @@ export default function Dashboard({
   const [isServersCollapsed, setIsServersCollapsed] = useState(false);
   const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
   // Restaurant selector state
-  const [selectedRestaurant, setSelectedRestaurant] = useState(RESTAURANTS[0].id);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantId>(RESTAURANTS[0].id);
   const [isRestaurantDropdownOpen, setIsRestaurantDropdownOpen] = useState(false);
 
   const activeRestaurant = RESTAURANTS.find(r => r.id === selectedRestaurant) ?? RESTAURANTS[0];
