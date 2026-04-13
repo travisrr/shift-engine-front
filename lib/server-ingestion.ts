@@ -11,6 +11,25 @@ type ImportRowRecord = ParsedImportRow & {
   id: string
 }
 
+type ImportRowQueryResult = {
+  id: string
+  row_index: number
+  section_label: string | null
+  source_day: string | null
+  shift_date: string | null
+  employee_name: string | null
+  sales_hr: number | null
+  tips_hr: number | null
+  tip_pct: number | null
+  avg_check: number | null
+  guests_hr: number | null
+  ppa: number | null
+  warnings: string[] | null
+  rejection_reason: string | null
+  is_accepted: boolean
+  raw_values: string[] | null
+}
+
 export async function resolveLocation(locationId: string): Promise<ResolvedLocation> {
   const supabase = getSupabaseAdminClient()
 
@@ -45,6 +64,10 @@ export async function resolveLocation(locationId: string): Promise<ResolvedLocat
       .eq('id', locationId)
 
     if (updateLocationError) throw updateLocationError
+  }
+
+  if (!accountId) {
+    throw new Error('Location account could not be resolved.')
   }
 
   return {
@@ -136,7 +159,24 @@ export async function finalizeImportPreview(importId: string) {
 
   if (rowsError) throw rowsError
 
-  const rows = (importRows || []) as ImportRowRecord[]
+  const rows: ImportRowRecord[] = ((importRows || []) as ImportRowQueryResult[]).map((row) => ({
+    id: row.id,
+    row_index: row.row_index,
+    section_label: row.section_label,
+    source_day: row.source_day,
+    shift_date: row.shift_date,
+    employee_name: row.employee_name,
+    sales_hr: row.sales_hr,
+    tips_hr: row.tips_hr,
+    tip_pct: row.tip_pct,
+    avg_check: row.avg_check,
+    guests_hr: row.guests_hr,
+    ppa: row.ppa,
+    warnings: row.warnings || [],
+    rejection_reason: row.rejection_reason,
+    accepted: row.is_accepted,
+    raw_values: row.raw_values || [],
+  }))
   const rowsWithDates = rows.filter((row) => row.shift_date && row.employee_name)
 
   if (rowsWithDates.length === 0) {
