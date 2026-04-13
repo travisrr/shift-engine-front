@@ -23,6 +23,7 @@ function parsePreviewRows(rows: Awaited<ReturnType<typeof parseToastCsvPreview>>
     warnings: row.warnings,
     rejection_reason: row.rejection_reason,
     accepted: row.accepted,
+    raw_values: row.raw_values,
   }))
 }
 

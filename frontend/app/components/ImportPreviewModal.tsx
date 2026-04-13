@@ -17,6 +17,7 @@ export interface ImportPreviewRow {
   warnings: string[];
   rejection_reason: string | null;
   accepted: boolean;
+  raw_values: string[];
 }
 
 export interface ImportPreviewData {
