@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-// @ts-ignore - papaparse types are installed but not being picked up in build
-import Papa from 'papaparse';
 import Sidebar from '../components/Sidebar';
 import Dashboard from '../components/Dashboard';
+import ImportPreviewModal, { type ImportPreviewData } from '../components/ImportPreviewModal';
 import type { ServerData } from '../components/Dashboard';
-import { getUploadByDateWithJobTitles, saveUpload, type ServerScore } from '../../lib/supabase-helpers';
+import { getUploadByDateWithJobTitles, type ServerScore } from '../../lib/supabase-helpers';
 
 function todayISO() {
   return new Date().toISOString().split('T')[0];
@@ -37,53 +36,6 @@ const mockServers: MockServerSeed[] = [
 const mockBartenders: MockServerSeed[] = [
   { name: 'Caleigh Graves', score: 92, salesHr: 776.2, tipsHr: 163.2, tipPct: 21.0, avgCheck: 45.6, guestsHr: 26.5 },
 ];
-
-/* ─────────────────── CSV Parsing Helpers ─────────────────── */
-
-interface ToastCSVRow {
-  'Server Name'?: string;
-  'Employee'?: string;
-  'Name'?: string;
-  'Server'?: string;
-  'Net Sales'?: string | number;
-  'Sales'?: string | number;
-  'Total Sales'?: string | number;
-  'Tips'?: string | number;
-  'Total Tips'?: string | number;
-  'Tip Amount'?: string | number;
-  'Hours'?: string | number;
-  'Shift Hours'?: string | number;
-  'Worked Hours'?: string | number;
-  'Guests'?: string | number;
-  'Total Guests'?: string | number;
-  'Guest Count'?: string | number;
-  'Guests Served'?: string | number;
-  'Checks'?: string | number;
-  'Total Checks'?: string | number;
-  'Check Count'?: string | number;
-  'Tip Percentage'?: string | number;
-  'Tip %'?: string | number;
-  [key: string]: string | number | undefined;
-}
-
-function normalizeNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    // Remove currency symbols, commas, and parse
-    const cleaned = value.replace(/[$,]/g, '').trim();
-    const num = parseFloat(cleaned);
-    return isNaN(num) ? null : num;
-  }
-  return null;
-}
-
-function getColumnValue(row: ToastCSVRow, possibleNames: string[]): string | number | undefined {
-  for (const name of possibleNames) {
-    if (row[name] !== undefined) return row[name];
-  }
-  return undefined;
-}
 
 function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;
@@ -214,72 +166,27 @@ function mockRowsToCohortDataset(rows: MockServerSeed[]): CohortDataset {
   );
 }
 
-function parseToastCSV(csvText: string): ServerScore[] {
-  const parseResult = Papa.parse<ToastCSVRow>(csvText, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (header: string) => header.trim(),
-  });
-
-  if (parseResult.errors.length > 0) {
-    console.error('CSV parse errors:', parseResult.errors);
-  }
-
-  const parsedRows: ServerScore[] = [];
-
-  for (const row of parseResult.data) {
-    // Try to find server name from various possible column names
-    const name = getColumnValue(row, ['Server Name', 'Employee', 'Name', 'Server']);
-    if (!name || typeof name !== 'string') continue;
-
-    // Parse numeric fields with flexible column name matching
-    const netSales = normalizeNumber(getColumnValue(row, ['Net Sales', 'Sales', 'Total Sales']));
-    const tips = normalizeNumber(getColumnValue(row, ['Tips', 'Total Tips', 'Tip Amount']));
-    const hours = normalizeNumber(getColumnValue(row, ['Hours', 'Shift Hours', 'Worked Hours']));
-    const guests = normalizeNumber(getColumnValue(row, ['Guests', 'Total Guests', 'Guest Count', 'Guests Served']));
-    const checks = normalizeNumber(getColumnValue(row, ['Checks', 'Total Checks', 'Check Count']));
-    const tipPct = normalizeNumber(getColumnValue(row, ['Tip Percentage', 'Tip %', 'Tip Percent']));
-    const avgCheckDirect = normalizeNumber(getColumnValue(row, ['Avg Check', 'Average Check']));
-
-    // Skip rows with no meaningful data
-    if (!netSales && !tips && !hours) continue;
-
-    // Calculate derived metrics
-    const salesHr = hours && hours > 0 && netSales ? netSales / hours : null;
-    const tipsHr = hours && hours > 0 && tips ? tips / hours : null;
-    // Use direct avg check from CSV if available, otherwise calculate from sales/checks
-    const avgCheck = avgCheckDirect ?? (checks && checks > 0 && netSales ? netSales / checks : null);
-    const guestsHr = hours && hours > 0 && guests ? guests / hours : null;
-    const ppa = guests && guests > 0 && netSales ? netSales / guests : null;
-
-    parsedRows.push({
-      server_name: name.trim(),
-      // Final cohort-relative grading is calculated after the data is split into
-      // role-specific cohorts so servers are only compared with like peers.
-      score: 75,
-      sales_hr: salesHr ? Math.round(salesHr * 100) / 100 : null,
-      tips_hr: tipsHr ? Math.round(tipsHr * 100) / 100 : null,
-      tip_pct: tipPct ? Math.round(tipPct * 10) / 10 : null,
-      avg_check: avgCheck ? Math.round(avgCheck * 100) / 100 : null,
-      guests_hr: guestsHr ? Math.round(guestsHr * 10) / 10 : null,
-      ppa: ppa ? Math.round(ppa * 100) / 100 : null,
-    });
-  }
-
-  return parsedRows.sort((a, b) => (b.sales_hr ?? 0) - (a.sales_hr ?? 0));
-}
-
 /* ─────────────────── Page ─────────────────── */
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(todayISO);
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [servers, setServers] = useState<ServerData[]>([]);
   const [bartenders, setBartenders] = useState<ServerData[]>([]);
   const [cohortAverages, setCohortAverages] = useState<ServerData>(EMPTY_COHORT_AVERAGES);
   const [bartenderCohortAverages, setBartenderCohortAverages] = useState<ServerData>(EMPTY_COHORT_AVERAGES);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImportConfirming, setIsImportConfirming] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportPreviewData | null>(null);
+
+  const clearDatasets = useCallback(() => {
+    setServers([]);
+    setBartenders([]);
+    setCohortAverages(EMPTY_COHORT_AVERAGES);
+    setBartenderCohortAverages(EMPTY_COHORT_AVERAGES);
+  }, []);
 
   // Load data from Supabase when date changes (fallback to mock data)
   const loadData = useCallback(async () => {
@@ -287,9 +194,15 @@ export default function DashboardPage() {
     setUploadError(null);
     setUploadSuccess(null);
 
+    if (!selectedLocation) {
+      clearDatasets();
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      console.log('[Dashboard] Loading data for date:', selectedDate);
-      const result = await getUploadByDateWithJobTitles(selectedDate);
+      console.log('[Dashboard] Loading data for date:', selectedDate, 'location:', selectedLocation);
+      const result = await getUploadByDateWithJobTitles(selectedDate, selectedLocation);
       
       if (result && result.scores && result.scores.length > 0) {
         console.log('[Dashboard] Loaded scores:', result.scores.map(s => ({ name: s.server_name, job_title: s.job_title })));
@@ -307,17 +220,10 @@ export default function DashboardPage() {
         setBartenders(bartenderDataset.servers);
         setCohortAverages(serverDataset.cohortAverages);
         setBartenderCohortAverages(bartenderDataset.cohortAverages);
-        } else {
-          console.log('[Dashboard] No data found, using mock data');
-          // Fallback to mock data when no CSV has been uploaded
-          const serverDataset = mockRowsToCohortDataset(mockServers);
-          const bartenderDataset = mockRowsToCohortDataset(mockBartenders);
-
-          setServers(serverDataset.servers);
-          setBartenders(bartenderDataset.servers);
-          setCohortAverages(serverDataset.cohortAverages);
-          setBartenderCohortAverages(bartenderDataset.cohortAverages);
-        }
+      } else {
+        console.log('[Dashboard] No data found for selected date/location');
+        clearDatasets();
+      }
     } catch (err) {
       console.error('[Dashboard] Error loading data:', err);
       // Fallback to mock data on error
@@ -331,7 +237,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate]);
+  }, [clearDatasets, selectedDate, selectedLocation]);
 
   // Initial load and when date changes
   useEffect(() => {
@@ -352,40 +258,92 @@ export default function DashboardPage() {
   const handleFileUpload = useCallback(async (file: File) => {
     setUploadError(null);
     setUploadSuccess(null);
+    setImportPreview(null);
+
+    if (!selectedLocation) {
+      setUploadError('Select a location before uploading Toast data.');
+      return;
+    }
 
     try {
-      // Read file contents
-      const text = await file.text();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('locationId', selectedLocation);
+      formData.append('fallbackDate', selectedDate);
 
-      // Parse the CSV
-      const parsedServers = parseToastCSV(text);
+      const response = await fetch('/api/uploads/csv/preview', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (parsedServers.length === 0) {
-        setUploadError('No valid server data found in CSV. Please check the file format.');
-        return;
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to process CSV upload');
       }
 
-      // Save to Supabase
-      await saveUpload(selectedDate, parsedServers);
-
-      // Reload data to ensure archived employees are filtered out
-      await loadData();
-
-      setUploadSuccess(`Successfully imported ${parsedServers.length} servers from ${file.name}`);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setUploadSuccess(null), 3000);
+      setImportPreview(result as ImportPreviewData);
     } catch (err) {
       console.error('Error processing CSV:', err);
       const message = err instanceof Error ? err.message : 'Failed to process CSV file';
       setUploadError(message);
     }
-  }, [selectedDate, loadData]);
+  }, [selectedDate, selectedLocation]);
+
+  const handleConfirmImport = useCallback(async () => {
+    if (!importPreview) return;
+
+    try {
+      setIsImportConfirming(true);
+      setUploadError(null);
+      setUploadSuccess(null);
+
+      const response = await fetch('/api/uploads/csv/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ previewId: importPreview.previewId }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to finalize CSV import');
+      }
+
+      const importedDates = Array.isArray(result?.importedDates) ? result.importedDates as Array<{ date: string; row_count: number }> : [];
+      const nextSelectedDate = importedDates.length > 0 && !importedDates.some((row) => row.date === selectedDate)
+        ? importedDates[0].date
+        : selectedDate;
+
+      if (nextSelectedDate !== selectedDate) {
+        setSelectedDate(nextSelectedDate);
+      }
+
+      setImportPreview(null);
+      if (nextSelectedDate === selectedDate) {
+        await loadData();
+      }
+
+      const importedCount = typeof result?.importedCount === 'number' ? result.importedCount : 0;
+      const locationName = typeof result?.locationName === 'string' ? result.locationName : 'selected location';
+      setUploadSuccess(`Imported ${importedCount} accepted rows into ${locationName}.`);
+      setTimeout(() => setUploadSuccess(null), 4000);
+    } catch (err) {
+      console.error('Error finalizing CSV import:', err);
+      setUploadError(err instanceof Error ? err.message : 'Failed to finalize CSV import');
+    } finally {
+      setIsImportConfirming(false);
+    }
+  }, [importPreview, loadData, selectedDate]);
 
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar onFileUpload={handleFileUpload} />
       <div className="flex-1">
+        <ImportPreviewModal
+          preview={importPreview}
+          isConfirming={isImportConfirming}
+          onConfirm={handleConfirmImport}
+          onClose={() => setImportPreview(null)}
+        />
         {(uploadError || uploadSuccess || isLoading) && (
           <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2">
             {uploadError && (
@@ -414,7 +372,9 @@ export default function DashboardPage() {
           cohortAverages={cohortAverages}
           bartenderCohortAverages={bartenderCohortAverages}
           selectedDate={selectedDate}
+          selectedLocation={selectedLocation}
           onDateChange={setSelectedDate}
+          onLocationChange={setSelectedLocation}
           hasData={servers.length > 0 || bartenders.length > 0}
           onRefresh={loadData}
           isRefreshing={isLoading}

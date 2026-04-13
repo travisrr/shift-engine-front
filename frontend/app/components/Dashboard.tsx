@@ -37,7 +37,9 @@ interface DashboardProps {
   cohortAverages: ServerData;
   bartenderCohortAverages?: ServerData;
   selectedDate: string;
+  selectedLocation: string;
   onDateChange: (date: string) => void;
+  onLocationChange: (locationId: string) => void;
   hasData: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
@@ -349,7 +351,9 @@ export default function Dashboard({
   cohortAverages,
   bartenderCohortAverages = cohortAverages,
   selectedDate,
+  selectedLocation,
   onDateChange,
+  onLocationChange,
   hasData,
   onRefresh,
   isRefreshing = false,
@@ -359,7 +363,6 @@ export default function Dashboard({
   const [isServersCollapsed, setIsServersCollapsed] = useState(false);
   const [isBartendersCollapsed, setIsBartendersCollapsed] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [isRestaurantDropdownOpen, setIsRestaurantDropdownOpen] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -371,14 +374,14 @@ export default function Dashboard({
       setLocations(activeLocations);
 
       if (activeLocations.length > 0 && !selectedLocation) {
-        setSelectedLocation(activeLocations[0].id);
+        onLocationChange(activeLocations[0].id);
       }
 
       setIsLoadingLocations(false);
     }
 
     fetchLocations();
-  }, []);
+  }, [onLocationChange, selectedLocation]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -469,7 +472,7 @@ export default function Dashboard({
                       <button
                         key={location.id}
                         onClick={() => {
-                          setSelectedLocation(location.id);
+                          onLocationChange(location.id);
                           setIsRestaurantDropdownOpen(false);
                         }}
                         className={`flex w-full items-center px-4 py-2 text-left text-[13px] transition-colors hover:bg-gray-50 ${

@@ -16,49 +16,41 @@ export interface ServerScore {
 /* ─────────────────── Helpers ─────────────────── */
 
 /**
- * Save (or overwrite) an upload for a given date.
- * Upserts the `uploads` row, deletes old scores, then batch-inserts new ones.
+ * CSV uploads are now server-owned so account/location metadata stays authoritative.
  */
-export async function saveUpload(date: string, servers: ServerScore[]) {
-  // Upsert the upload row (unique on date)
-  const { data: upload, error: uploadError } = await supabase
-    .from('uploads')
-    .upsert({ date }, { onConflict: 'date' })
-    .select('id')
-    .single()
-
-  if (uploadError) throw uploadError
-
-  // Delete existing scores for this upload (overwrite behavior)
-  await supabase.from('server_scores').delete().eq('upload_id', upload.id)
-
-  // Batch-insert the new scores
-  const rows = servers.map((s) => ({
-    upload_id: upload.id,
-    server_name: s.server_name,
-    score: s.score,
-    sales_hr: s.sales_hr,
-    tips_hr: s.tips_hr,
-    tip_pct: s.tip_pct,
-    avg_check: s.avg_check,
-    guests_hr: s.guests_hr,
-    ppa: s.ppa,
-  }))
-
-  const { error: scoresError } = await supabase
-    .from('server_scores')
-    .insert(rows)
-
-  if (scoresError) throw scoresError
-
-  return upload.id
+export async function saveUpload() {
+  throw new Error('CSV uploads now go through /api/uploads/csv. Use the server upload route instead.')
 }
 
-/**
- * Fetch scorecard data for a specific date.
- * Returns null if no upload exists for that date.
- */
-export async function getUploadByDate(date: string) {
+type UploadRow = {
+  id: string
+  date: string
+  created_at: string
+}
+
+async function getUploadRow(date: string, locationId?: string): Promise<UploadRow | null> {
+  if (locationId) {
+    const { data: scopedUpload, error: scopedError } = await supabase
+      .from('uploads')
+      .select('id, date, created_at')
+      .eq('date', date)
+      .eq('location_id', locationId)
+      .maybeSingle()
+
+    if (scopedError) throw scopedError
+    if (scopedUpload) return scopedUpload as UploadRow
+
+    const { data: legacyUpload, error: legacyError } = await supabase
+      .from('uploads')
+      .select('id, date, created_at')
+      .eq('date', date)
+      .is('location_id', null)
+      .maybeSingle()
+
+    if (legacyError) throw legacyError
+    return legacyUpload as UploadRow | null
+  }
+
   const { data: upload, error } = await supabase
     .from('uploads')
     .select('id, date, created_at')
@@ -66,6 +58,15 @@ export async function getUploadByDate(date: string) {
     .maybeSingle()
 
   if (error) throw error
+  return upload as UploadRow | null
+}
+
+/**
+ * Fetch scorecard data for a specific date.
+ * Returns null if no upload exists for that date.
+ */
+export async function getUploadByDate(date: string, locationId?: string) {
+  const upload = await getUploadRow(date, locationId)
   if (!upload) return null
 
   const { data: scores, error: scoresError } = await supabase
@@ -83,14 +84,8 @@ export async function getUploadByDate(date: string) {
  * Fetch scorecard data with job title information from wait_staff.
  * Returns scores with job_title for filtering into Servers and Bar Tenders.
  */
-export async function getUploadByDateWithJobTitles(date: string) {
-  const { data: upload, error } = await supabase
-    .from('uploads')
-    .select('id, date, created_at')
-    .eq('date', date)
-    .maybeSingle()
-
-  if (error) throw error
+export async function getUploadByDateWithJobTitles(date: string, locationId?: string) {
+  const upload = await getUploadRow(date, locationId)
   if (!upload) return null
 
   // Fetch scores for this upload
