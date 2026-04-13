@@ -438,7 +438,7 @@ export default function Dashboard({
   const activeLocation = locations.find((location) => location.id === selectedLocation) ?? locations[0];
 
   return (
-    <div className="min-h-screen bg-gray-50/60 lg:ml-60">
+    <div className="min-h-screen bg-zinc-50 lg:ml-60">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
         <div className="mb-8 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
           <div className="flex flex-col gap-2">
